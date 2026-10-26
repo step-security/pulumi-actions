@@ -3190,12 +3190,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"envalid@npm:^8.2.0":
-  version: 8.2.0
-  resolution: "envalid@npm:8.2.0"
-  dependencies:
-    tslib: "npm:2.8.1"
-  checksum: 10c0/c8681e30ffe8489937c68233d21f8527c09685585d8403dff3736e8880c7707926cb7992678876059354130328c9a3061d2f1cd57c9f3ff365072a2561a9b394
+"envalid@npm:^9.0.0":
+  version: 9.0.0
+  resolution: "envalid@npm:9.0.0"
+  checksum: 10c0/2f7780dc0506ea71aedd273a8e7882e1d418b5e513fd1c121e4dc34c773e8727cb8f4301fc51d818e60a032c4406346d5af121cb75b7c74d13349b3d48f2f8c9
   languageName: node
   linkType: hard
 
@@ -5585,7 +5583,7 @@ __metadata:
     "@vercel/ncc": "npm:^0.45.0"
     axios: "npm:^1.20.0"
     dedent: "npm:^1.7.2"
-    envalid: "npm:^8.2.0"
+    envalid: "npm:^9.0.0"
     eslint: "npm:~10.10.0"
     eslint-config-prettier: "npm:~10.1.8"
     eslint-plugin-import-x: "npm:~4.17.1"
@@ -6103,7 +6101,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tslib@npm:2.8.1, tslib@npm:^2.1.0, tslib@npm:^2.4.0, tslib@npm:^2.8.1":
+"tslib@npm:^2.1.0, tslib@npm:^2.4.0, tslib@npm:^2.8.1":
   version: 2.8.1
   resolution: "tslib@npm:2.8.1"
   checksum: 10c0/9c4759110a19c53f992d9aae23aac5ced636e99887b51b9e61def52611732872ff7668757d4e4c61f19691e36f4da981cd9485e869b4a7408d689f6bf1f14e62
