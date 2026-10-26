@@ -975,7 +975,16 @@ class BackoffTimeout {
                 this.maxDelay = options.maxDelay;
             }
         }
-        this.trace('constructed initialDelay=' + this.initialDelay + ' multiplier=' + this.multiplier + ' jitter=' + this.jitter + ' maxDelay=' + this.maxDelay);
+        if (this.traceEnabled) {
+            this.trace('constructed initialDelay=' +
+                this.initialDelay +
+                ' multiplier=' +
+                this.multiplier +
+                ' jitter=' +
+                this.jitter +
+                ' maxDelay=' +
+                this.maxDelay);
+        }
         this.nextDelay = this.initialDelay;
         this.timerId = setTimeout(() => { }, 0);
         clearTimeout(this.timerId);
@@ -983,12 +992,19 @@ class BackoffTimeout {
     static getNextId() {
         return this.nextId++;
     }
+    get traceEnabled() {
+        return logging.isTracerEnabled(TRACER_NAME);
+    }
     trace(text) {
-        logging.trace(constants_1.LogVerbosity.DEBUG, TRACER_NAME, '{' + this.id + '} ' + text);
+        if (this.traceEnabled) {
+            logging.trace(constants_1.LogVerbosity.DEBUG, TRACER_NAME, '{' + this.id + '} ' + text);
+        }
     }
     runTimer(delay) {
         var _a, _b;
-        this.trace('runTimer(delay=' + delay + ')');
+        if (this.traceEnabled) {
+            this.trace('runTimer(delay=' + delay + ')');
+        }
         this.endTime = this.startTime;
         this.endTime.setMilliseconds(this.endTime.getMilliseconds() + delay);
         clearTimeout(this.timerId);
@@ -1028,7 +1044,9 @@ class BackoffTimeout {
      * retroactively apply that reset to the current timer.
      */
     reset() {
-        this.trace('reset() running=' + this.running);
+        if (this.traceEnabled) {
+            this.trace('reset() running=' + this.running);
+        }
         this.nextDelay = this.initialDelay;
         if (this.running) {
             const now = new Date();
@@ -1104,6 +1122,7 @@ BackoffTimeout.nextId = 0;
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CallCredentials = void 0;
+exports.isEmptyCallCredentials = isEmptyCallCredentials;
 const metadata_1 = __nccwpck_require__(36100);
 function isCurrentOauth2Client(client) {
     return ('getRequestHeaders' in client &&
@@ -1180,6 +1199,9 @@ class ComposedCallCredentials extends CallCredentials {
         return base;
     }
     compose(other) {
+        if (other instanceof EmptyCallCredentials) {
+            return this;
+        }
         return new ComposedCallCredentials(this.creds.concat([other]));
     }
     _equals(other) {
@@ -1212,6 +1234,9 @@ class SingleCallCredentials extends CallCredentials {
         });
     }
     compose(other) {
+        if (other instanceof EmptyCallCredentials) {
+            return this;
+        }
         return new ComposedCallCredentials([this, other]);
     }
     _equals(other) {
@@ -1236,6 +1261,9 @@ class EmptyCallCredentials extends CallCredentials {
     _equals(other) {
         return other instanceof EmptyCallCredentials;
     }
+}
+function isEmptyCallCredentials(callCredentials) {
+    return callCredentials instanceof EmptyCallCredentials;
 }
 //# sourceMappingURL=call-credentials.js.map
 
@@ -1801,6 +1829,7 @@ class InsecureChannelCredentialsImpl extends ChannelCredentials {
         return other instanceof InsecureChannelCredentialsImpl;
     }
     _createSecureConnector(channelTarget, options, callCredentials) {
+        const credentials = callCredentials !== null && callCredentials !== void 0 ? callCredentials : call_credentials_1.CallCredentials.createEmpty();
         return {
             connect(socket) {
                 return Promise.resolve({
@@ -1812,7 +1841,7 @@ class InsecureChannelCredentialsImpl extends ChannelCredentials {
                 return Promise.resolve();
             },
             getCallCredentials: () => {
-                return callCredentials !== null && callCredentials !== void 0 ? callCredentials : call_credentials_1.CallCredentials.createEmpty();
+                return credentials;
             },
             destroy() { }
         };
@@ -2302,6 +2331,7 @@ exports.ChannelImplementation = ChannelImplementation;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.registerChannelzSocket = exports.registerChannelzServer = exports.registerChannelzSubchannel = exports.registerChannelzChannel = exports.ChannelzCallTrackerStub = exports.ChannelzCallTracker = exports.ChannelzChildrenTrackerStub = exports.ChannelzChildrenTracker = exports.ChannelzTrace = exports.ChannelzTraceStub = void 0;
 exports.unregisterChannelzRef = unregisterChannelzRef;
+exports.dateToProtoTimestamp = dateToProtoTimestamp;
 exports.getChannelzHandlers = getChannelzHandlers;
 exports.getChannelzServiceDefinition = getChannelzServiceDefinition;
 exports.setup = setup;
@@ -2461,7 +2491,7 @@ class ChannelzCallTracker {
     }
     addCallStarted() {
         this.callsStarted += 1;
-        this.lastCallStartedTimestamp = new Date();
+        this.lastCallStartedTimestamp = Date.now();
     }
     addCallSucceeded() {
         this.callsSucceeded += 1;
@@ -2604,12 +2634,12 @@ function connectivityStateToMessage(state) {
     }
 }
 function dateToProtoTimestamp(date) {
-    if (!date) {
+    if (date === null || date === undefined) {
         return null;
     }
-    const millisSinceEpoch = date.getTime();
+    const millisSinceEpoch = typeof date === 'number' ? date : date.getTime();
     return {
-        seconds: (millisSinceEpoch / 1000) | 0,
+        seconds: Math.floor(millisSinceEpoch / 1000),
         nanos: (millisSinceEpoch % 1000) * 1000000,
     };
 }
@@ -4309,7 +4339,7 @@ const units = [
     ['H', 60 * 60 * 1000],
 ];
 function getDeadlineTimeoutString(deadline) {
-    const now = new Date().getTime();
+    const now = Date.now();
     if (deadline instanceof Date) {
         deadline = deadline.getTime();
     }
@@ -4340,7 +4370,7 @@ const MAX_TIMEOUT_TIME = 2147483647;
  */
 function getRelativeTimeout(deadline) {
     const deadlineMs = deadline instanceof Date ? deadline.getTime() : deadline;
-    const now = new Date().getTime();
+    const now = Date.now();
     const timeout = deadlineMs - now;
     if (timeout < 0) {
         return 0;
@@ -4374,7 +4404,9 @@ function deadlineToString(deadline) {
  * @returns
  */
 function formatDateDifference(startDate, endDate) {
-    return ((endDate.getTime() - startDate.getTime()) / 1000).toFixed(3) + 's';
+    const startMs = typeof startDate === 'number' ? startDate : startDate.getTime();
+    const endMs = typeof endDate === 'number' ? endDate : endDate.getTime();
+    return ((endMs - startMs) / 1000).toFixed(3) + 's';
 }
 //# sourceMappingURL=deadline.js.map
 
@@ -4482,10 +4514,11 @@ function durationToString(duration) {
  * limitations under the License.
  *
  */
-var _a;
+var _a, _b;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.GRPC_NODE_USE_ALTERNATIVE_RESOLVER = void 0;
+exports.GRPC_NODE_DEBUG_SEND_ERROR_DETAILS = exports.GRPC_NODE_USE_ALTERNATIVE_RESOLVER = void 0;
 exports.GRPC_NODE_USE_ALTERNATIVE_RESOLVER = ((_a = process.env.GRPC_NODE_USE_ALTERNATIVE_RESOLVER) !== null && _a !== void 0 ? _a : 'false') === 'true';
+exports.GRPC_NODE_DEBUG_SEND_ERROR_DETAILS = ((_b = process.env.GRPC_NODE_DEBUG_SEND_ERROR_DETAILS) !== null && _b !== void 0 ? _b : 'false') === 'true';
 //# sourceMappingURL=environment.js.map
 
 /***/ }),
@@ -5300,7 +5333,7 @@ class InternalChannel {
          * first time the resolver returns a result, which includes the ConfigSelector.
          */
         this.configSelectionQueue = [];
-        this.pickQueue = [];
+        this.pickQueue = new Set();
         this.connectivityStateWatchers = [];
         /**
          * This timer does not do anything on its own. Its purpose is to hold the
@@ -5331,6 +5364,12 @@ class InternalChannel {
          * 0 and MAX_SAFE_INTEGER.
          */
         this.randomChannelId = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+        /**
+         * Two-level cache mapping host to method name to precomputed service URL
+         * (`https://${hostname}/${serviceName}`) used by call credentials. Nested
+         * maps avoid intermediate composite key string allocations on the hot path.
+         */
+        this.serviceUrlCache = new Map();
         if (typeof target !== 'string') {
             throw new TypeError('Channel target must be a string');
         }
@@ -5393,9 +5432,9 @@ class InternalChannel {
             },
             updateState: (connectivityState, picker) => {
                 this.currentPicker = picker;
-                const queueCopy = this.pickQueue.slice();
-                this.pickQueue = [];
-                if (queueCopy.length > 0) {
+                const queueCopy = this.pickQueue;
+                this.pickQueue = new Set();
+                if (queueCopy.size > 0) {
                     this.callRefTimerUnref();
                 }
                 for (const call of queueCopy) {
@@ -5470,20 +5509,27 @@ class InternalChannel {
         this.filterStackFactory = new filter_stack_1.FilterStackFactory([
             new compression_filter_1.CompressionFilterFactory(this, this.options),
         ]);
-        this.trace('Channel constructed with options ' +
-            JSON.stringify(options, undefined, 2));
-        const error = new Error();
+        if (this.traceEnabled) {
+            this.trace('Channel constructed with options ' +
+                JSON.stringify(options, undefined, 2));
+        }
         if ((0, logging_1.isTracerEnabled)('channel_stacktrace')) {
+            const error = new Error();
             (0, logging_1.trace)(constants_1.LogVerbosity.DEBUG, 'channel_stacktrace', '(' +
                 this.channelzRef.id +
                 ') ' +
                 'Channel constructed \n' +
                 ((_f = error.stack) === null || _f === void 0 ? void 0 : _f.substring(error.stack.indexOf('\n') + 1)));
         }
-        this.lastActivityTimestamp = new Date();
+        this.lastActivityTimestamp = Date.now();
+    }
+    get traceEnabled() {
+        return (0, logging_1.isTracerEnabled)('channel');
     }
     trace(text, verbosityOverride) {
-        (0, logging_1.trace)(verbosityOverride !== null && verbosityOverride !== void 0 ? verbosityOverride : constants_1.LogVerbosity.DEBUG, 'channel', '(' + this.channelzRef.id + ') ' + (0, uri_parser_1.uriToString)(this.target) + ' ' + text);
+        if (this.traceEnabled) {
+            (0, logging_1.trace)(verbosityOverride !== null && verbosityOverride !== void 0 ? verbosityOverride : constants_1.LogVerbosity.DEBUG, 'channel', '(' + this.channelzRef.id + ') ' + (0, uri_parser_1.uriToString)(this.target) + ' ' + text);
+        }
     }
     callRefTimerRef() {
         var _a, _b, _c, _d;
@@ -5492,10 +5538,12 @@ class InternalChannel {
         }
         // If the hasRef function does not exist, always run the code
         if (!((_b = (_a = this.callRefTimer).hasRef) === null || _b === void 0 ? void 0 : _b.call(_a))) {
-            this.trace('callRefTimer.ref | configSelectionQueue.length=' +
-                this.configSelectionQueue.length +
-                ' pickQueue.length=' +
-                this.pickQueue.length);
+            if (this.traceEnabled) {
+                this.trace('callRefTimer.ref | configSelectionQueue.length=' +
+                    this.configSelectionQueue.length +
+                    ' pickQueue.length=' +
+                    this.pickQueue.size);
+            }
             (_d = (_c = this.callRefTimer).ref) === null || _d === void 0 ? void 0 : _d.call(_c);
         }
     }
@@ -5503,10 +5551,12 @@ class InternalChannel {
         var _a, _b, _c;
         // If the timer or the hasRef function does not exist, always run the code
         if (!((_a = this.callRefTimer) === null || _a === void 0 ? void 0 : _a.hasRef) || this.callRefTimer.hasRef()) {
-            this.trace('callRefTimer.unref | configSelectionQueue.length=' +
-                this.configSelectionQueue.length +
-                ' pickQueue.length=' +
-                this.pickQueue.length);
+            if (this.traceEnabled) {
+                this.trace('callRefTimer.unref | configSelectionQueue.length=' +
+                    this.configSelectionQueue.length +
+                    ' pickQueue.length=' +
+                    this.pickQueue.size);
+            }
             (_c = (_b = this.callRefTimer) === null || _b === void 0 ? void 0 : _b.unref) === null || _c === void 0 ? void 0 : _c.call(_b);
         }
     }
@@ -5565,8 +5615,14 @@ class InternalChannel {
         });
     }
     queueCallForPick(call) {
-        this.pickQueue.push(call);
+        this.pickQueue.add(call);
         this.callRefTimerRef();
+    }
+    removeCallFromPickQueue(call) {
+        this.pickQueue.delete(call);
+        if (this.pickQueue.size === 0) {
+            this.callRefTimerUnref();
+        }
     }
     getConfig(method, metadata) {
         if (this.connectivityState !== connectivity_state_1.ConnectivityState.SHUTDOWN) {
@@ -5619,8 +5675,8 @@ class InternalChannel {
                 this.startIdleTimeout(this.idleTimeoutMs);
                 return;
             }
-            const now = new Date();
-            const timeSinceLastActivity = now.valueOf() - this.lastActivityTimestamp.valueOf();
+            const now = Date.now();
+            const timeSinceLastActivity = now - this.lastActivityTimestamp;
             if (timeSinceLastActivity >= this.idleTimeoutMs) {
                 this.trace('Idle timer triggered after ' +
                     this.idleTimeoutMs +
@@ -5659,27 +5715,67 @@ class InternalChannel {
             }
         }
         this.callCount -= 1;
-        this.lastActivityTimestamp = new Date();
+        this.lastActivityTimestamp = Date.now();
         this.maybeStartIdleTimer();
     }
-    createLoadBalancingCall(callConfig, method, host, credentials, deadline) {
-        const callNumber = (0, call_number_1.getNextCallNumber)();
-        this.trace('createLoadBalancingCall [' + callNumber + '] method="' + method + '"');
-        return new load_balancing_call_1.LoadBalancingCall(this, callConfig, method, host, credentials, deadline, callNumber);
+    /**
+     * Returns the precomputed service URL (`https://${hostname}/${serviceName}`)
+     * for the given host and method, using a bounded cache to avoid parsing on
+     * every RPC.
+     */
+    getServiceUrl(host, methodName) {
+        let methodMap = this.serviceUrlCache.get(host);
+        if (methodMap === undefined) {
+            if (this.serviceUrlCache.size < InternalChannel.MAX_CACHED_HOSTS) {
+                methodMap = new Map();
+                this.serviceUrlCache.set(host, methodMap);
+            }
+        }
+        if (methodMap !== undefined) {
+            const serviceUrl = methodMap.get(methodName);
+            if (serviceUrl !== undefined) {
+                return serviceUrl;
+            }
+            const computedServiceUrl = (0, uri_parser_1.computeServiceUrl)(host, methodName);
+            if (methodMap.size < InternalChannel.MAX_METHODS_PER_HOST) {
+                methodMap.set(methodName, computedServiceUrl);
+            }
+            return computedServiceUrl;
+        }
+        return (0, uri_parser_1.computeServiceUrl)(host, methodName);
     }
-    createRetryingCall(callConfig, method, host, credentials, deadline) {
-        const callNumber = (0, call_number_1.getNextCallNumber)();
-        this.trace('createRetryingCall [' + callNumber + '] method="' + method + '"');
-        return new retrying_call_1.RetryingCall(this, callConfig, method, host, credentials, deadline, callNumber, this.retryBufferTracker, RETRY_THROTTLER_MAP.get(this.getTarget()));
+    createLoadBalancingCall(callConfig, method, host, credentials, deadline, callNumber) {
+        const finalCallNumber = callNumber !== null && callNumber !== void 0 ? callNumber : (0, call_number_1.getNextCallNumber)();
+        if (this.traceEnabled) {
+            this.trace('createLoadBalancingCall [' +
+                finalCallNumber +
+                '] method="' +
+                method +
+                '"');
+        }
+        return new load_balancing_call_1.LoadBalancingCall(this, callConfig, method, host, credentials, deadline, finalCallNumber);
+    }
+    createRetryingCall(callConfig, method, host, credentials, deadline, callNumber) {
+        const finalCallNumber = callNumber !== null && callNumber !== void 0 ? callNumber : (0, call_number_1.getNextCallNumber)();
+        if (this.traceEnabled) {
+            this.trace('createRetryingCall [' +
+                finalCallNumber +
+                '] method="' +
+                method +
+                '"');
+        }
+        return new retrying_call_1.RetryingCall(this, callConfig, method, host, credentials, deadline, finalCallNumber, this.retryBufferTracker, RETRY_THROTTLER_MAP.get(this.getTarget()));
     }
     createResolvingCall(method, deadline, host, parentCall, propagateFlags) {
         const callNumber = (0, call_number_1.getNextCallNumber)();
-        this.trace('createResolvingCall [' +
-            callNumber +
-            '] method="' +
-            method +
-            '", deadline=' +
-            (0, deadline_1.deadlineToString)(deadline));
+        if (this.traceEnabled) {
+            this.trace('createResolvingCall [' +
+                callNumber +
+                '] method="' +
+                method +
+                '", deadline=' +
+                (0, deadline_1.deadlineToString)(deadline));
+        }
         const finalOptions = {
             deadline: deadline,
             flags: propagateFlags !== null && propagateFlags !== void 0 ? propagateFlags : constants_1.Propagate.DEFAULTS,
@@ -5705,7 +5801,7 @@ class InternalChannel {
         for (const call of this.pickQueue) {
             call.cancelWithStatus(constants_1.Status.UNAVAILABLE, 'Channel closed before call started');
         }
-        this.pickQueue = [];
+        this.pickQueue.clear();
         if (this.callRefTimer) {
             clearInterval(this.callRefTimer);
         }
@@ -5718,6 +5814,7 @@ class InternalChannel {
         this.subchannelPool.unrefUnusedSubchannels();
         (_a = this.configSelector) === null || _a === void 0 ? void 0 : _a.unref();
         this.configSelector = null;
+        this.serviceUrlCache.clear();
     }
     getTarget() {
         return (0, uri_parser_1.uriToString)(this.target);
@@ -5726,7 +5823,7 @@ class InternalChannel {
         const connectivityState = this.connectivityState;
         if (tryToConnect) {
             this.resolvingLoadBalancer.exitIdle();
-            this.lastActivityTimestamp = new Date();
+            this.lastActivityTimestamp = Date.now();
             this.maybeStartIdleTimer();
         }
         return connectivityState;
@@ -5780,6 +5877,14 @@ class InternalChannel {
     }
 }
 exports.InternalChannel = InternalChannel;
+/**
+ * Maximum number of distinct hosts to cache service URLs for on this channel.
+ */
+InternalChannel.MAX_CACHED_HOSTS = 5;
+/**
+ * Maximum number of distinct method paths to cache per host.
+ */
+InternalChannel.MAX_METHODS_PER_HOST = 100;
 //# sourceMappingURL=internal-channel.js.map
 
 /***/ }),
@@ -7797,19 +7902,19 @@ function selectLbConfigFromList(configs, fallbackTodefault = false) {
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.LoadBalancingCall = void 0;
+const call_credentials_1 = __nccwpck_require__(79190);
 const connectivity_state_1 = __nccwpck_require__(60778);
 const constants_1 = __nccwpck_require__(68288);
 const deadline_1 = __nccwpck_require__(52173);
 const metadata_1 = __nccwpck_require__(36100);
 const picker_1 = __nccwpck_require__(71663);
-const uri_parser_1 = __nccwpck_require__(56027);
 const logging = __nccwpck_require__(8536);
 const control_plane_status_1 = __nccwpck_require__(39962);
 const http2 = __nccwpck_require__(85675);
 const TRACER_NAME = 'load_balancing_call';
+const RESOLVED_EMPTY_METADATA = Promise.resolve(undefined);
 class LoadBalancingCall {
     constructor(channel, callConfig, methodName, host, credentials, deadline, callNumber) {
-        var _a, _b;
         this.channel = channel;
         this.callConfig = callConfig;
         this.methodName = methodName;
@@ -7826,24 +7931,13 @@ class LoadBalancingCall {
         this.listener = null;
         this.onCallEnded = null;
         this.childStartTime = null;
-        const splitPath = this.methodName.split('/');
-        let serviceName = '';
-        /* The standard path format is "/{serviceName}/{methodName}", so if we split
-         * by '/', the first item should be empty and the second should be the
-         * service name */
-        if (splitPath.length >= 2) {
-            serviceName = splitPath[1];
-        }
-        const hostname = (_b = (_a = (0, uri_parser_1.splitHostPort)(this.host)) === null || _a === void 0 ? void 0 : _a.host) !== null && _b !== void 0 ? _b : 'localhost';
-        /* Currently, call credentials are only allowed on HTTPS connections, so we
-         * can assume that the scheme is "https" */
-        this.serviceUrl = `https://${hostname}/${serviceName}`;
-        this.startTime = new Date();
+        this.serviceUrl = this.channel.getServiceUrl(this.host, this.methodName);
+        this.startTime = Date.now();
     }
     getDeadlineInfo() {
         var _a, _b;
         const deadlineInfo = [];
-        if (this.childStartTime) {
+        if (this.childStartTime !== null) {
             if (this.childStartTime > this.startTime) {
                 if ((_a = this.metadata) === null || _a === void 0 ? void 0 : _a.getOptions().waitForReady) {
                     deadlineInfo.push('wait_for_ready');
@@ -7861,23 +7955,47 @@ class LoadBalancingCall {
         }
         return deadlineInfo;
     }
+    get traceEnabled() {
+        return logging.isTracerEnabled(TRACER_NAME);
+    }
     trace(text) {
-        logging.trace(constants_1.LogVerbosity.DEBUG, TRACER_NAME, '[' + this.callNumber + '] ' + text);
+        if (this.traceEnabled) {
+            logging.trace(constants_1.LogVerbosity.DEBUG, TRACER_NAME, '[' + this.callNumber + '] ' + text);
+        }
+    }
+    getSubchannelString(subchannel) {
+        return subchannel
+            ? '(' +
+                subchannel.getChannelzRef().id +
+                ') ' +
+                subchannel.getAddress()
+            : '' + subchannel;
     }
     outputStatus(status, progress) {
         var _a, _b;
         if (!this.ended) {
             this.ended = true;
-            this.trace('ended with status: code=' +
-                status.code +
-                ' details="' +
-                status.details +
-                '" start time=' +
-                this.startTime.toISOString());
+            if (this.traceEnabled) {
+                this.trace('ended with status: code=' +
+                    status.code +
+                    ' details="' +
+                    status.details +
+                    '" start time=' +
+                    new Date(this.startTime).toISOString());
+            }
             const finalStatus = Object.assign(Object.assign({}, status), { progress });
             (_a = this.listener) === null || _a === void 0 ? void 0 : _a.onReceiveStatus(finalStatus);
             (_b = this.onCallEnded) === null || _b === void 0 ? void 0 : _b.call(this, finalStatus.code, finalStatus.details, finalStatus.metadata);
+            this.channel.removeCallFromPickQueue(this);
         }
+    }
+    generateCallCredentialsMetadata(callCredentials) {
+        return (0, call_credentials_1.isEmptyCallCredentials)(callCredentials)
+            ? RESOLVED_EMPTY_METADATA
+            : callCredentials.generateMetadata({
+                method_name: this.methodName,
+                service_url: this.serviceUrl,
+            });
     }
     doPick() {
         var _a, _b;
@@ -7890,25 +8008,19 @@ class LoadBalancingCall {
         this.trace('Pick called');
         const finalMetadata = this.metadata.clone();
         const pickResult = this.channel.doPick(finalMetadata, this.callConfig.pickInformation);
-        const subchannelString = pickResult.subchannel
-            ? '(' +
-                pickResult.subchannel.getChannelzRef().id +
-                ') ' +
-                pickResult.subchannel.getAddress()
-            : '' + pickResult.subchannel;
-        this.trace('Pick result: ' +
-            picker_1.PickResultType[pickResult.pickResultType] +
-            ' subchannel: ' +
-            subchannelString +
-            ' status: ' +
-            ((_a = pickResult.status) === null || _a === void 0 ? void 0 : _a.code) +
-            ' ' +
-            ((_b = pickResult.status) === null || _b === void 0 ? void 0 : _b.details));
+        if (this.traceEnabled) {
+            this.trace('Pick result: ' +
+                picker_1.PickResultType[pickResult.pickResultType] +
+                ' subchannel: ' +
+                this.getSubchannelString(pickResult.subchannel) +
+                ' status: ' +
+                ((_a = pickResult.status) === null || _a === void 0 ? void 0 : _a.code) +
+                ' ' +
+                ((_b = pickResult.status) === null || _b === void 0 ? void 0 : _b.details));
+        }
         switch (pickResult.pickResultType) {
             case picker_1.PickResultType.COMPLETE:
-                const combinedCallCredentials = this.credentials.compose(pickResult.subchannel.getCallCredentials());
-                combinedCallCredentials
-                    .generateMetadata({ method_name: this.methodName, service_url: this.serviceUrl })
+                this.generateCallCredentialsMetadata(this.credentials.compose(pickResult.subchannel.getCallCredentials()))
                     .then(credsMetadata => {
                     var _a;
                     /* If this call was cancelled (e.g. by the deadline) before
@@ -7918,7 +8030,9 @@ class LoadBalancingCall {
                         this.trace('Credentials metadata generation finished after call ended');
                         return;
                     }
-                    finalMetadata.merge(credsMetadata);
+                    if (credsMetadata) {
+                        finalMetadata.merge(credsMetadata);
+                    }
                     if (finalMetadata.get('authorization').length > 1) {
                         this.outputStatus({
                             code: constants_1.Status.INTERNAL,
@@ -7928,11 +8042,13 @@ class LoadBalancingCall {
                     }
                     if (pickResult.subchannel.getConnectivityState() !==
                         connectivity_state_1.ConnectivityState.READY) {
-                        this.trace('Picked subchannel ' +
-                            subchannelString +
-                            ' has state ' +
-                            connectivity_state_1.ConnectivityState[pickResult.subchannel.getConnectivityState()] +
-                            ' after getting credentials metadata. Retrying pick');
+                        if (this.traceEnabled) {
+                            this.trace('Picked subchannel ' +
+                                this.getSubchannelString(pickResult.subchannel) +
+                                ' has state ' +
+                                connectivity_state_1.ConnectivityState[pickResult.subchannel.getConnectivityState()] +
+                                ' after getting credentials metadata. Retrying pick');
+                        }
                         this.doPick();
                         return;
                     }
@@ -7961,14 +8077,16 @@ class LoadBalancingCall {
                                     this.outputStatus(status, 'PROCESSED');
                                 }
                             },
-                        });
-                        this.childStartTime = new Date();
+                        }, this.callNumber);
+                        this.childStartTime = Date.now();
                     }
                     catch (error) {
-                        this.trace('Failed to start call on picked subchannel ' +
-                            subchannelString +
-                            ' with error ' +
-                            error.message);
+                        if (this.traceEnabled) {
+                            this.trace('Failed to start call on picked subchannel ' +
+                                this.getSubchannelString(pickResult.subchannel) +
+                                ' with error ' +
+                                error.message);
+                        }
                         this.outputStatus({
                             code: constants_1.Status.INTERNAL,
                             details: 'Failed to start HTTP/2 stream with error ' +
@@ -7979,7 +8097,9 @@ class LoadBalancingCall {
                     }
                     (_a = pickResult.onCallStarted) === null || _a === void 0 ? void 0 : _a.call(pickResult);
                     this.onCallEnded = pickResult.onCallEnded;
-                    this.trace('Created child call [' + this.child.getCallNumber() + ']');
+                    if (this.traceEnabled) {
+                        this.trace('Created child call [' + this.child.getCallNumber() + ']');
+                    }
                     if (this.readPending) {
                         this.child.startRead();
                     }
@@ -8022,7 +8142,9 @@ class LoadBalancingCall {
     }
     cancelWithStatus(status, details) {
         var _a;
-        this.trace('cancelWithStatus code: ' + status + ' details: "' + details + '"');
+        if (this.traceEnabled) {
+            this.trace('cancelWithStatus code: ' + status + ' details: "' + details + '"');
+        }
         (_a = this.child) === null || _a === void 0 ? void 0 : _a.cancelWithStatus(status, details);
         this.outputStatus({ code: status, details: details, metadata: new metadata_1.Metadata() }, 'PROCESSED');
     }
@@ -8037,7 +8159,9 @@ class LoadBalancingCall {
         this.doPick();
     }
     sendMessageWithContext(context, message) {
-        this.trace('write() called with message of length ' + message.length);
+        if (this.traceEnabled) {
+            this.trace('write() called with message of length ' + message.length);
+        }
         if (this.child) {
             this.child.sendMessageWithContext(context, message);
         }
@@ -8184,6 +8308,9 @@ const tracersString = (_d = (_c = process.env.GRPC_NODE_TRACE) !== null && _c !=
 const enabledTracers = new Set();
 const disabledTracers = new Set();
 for (const tracerName of tracersString.split(',')) {
+    if (tracerName.length === 0) {
+        continue;
+    }
     if (tracerName.startsWith('-')) {
         disabledTracers.add(tracerName.substring(1));
     }
@@ -8192,6 +8319,7 @@ for (const tracerName of tracersString.split(',')) {
     }
 }
 const allEnabled = enabledTracers.has('all');
+const anyTracerEnabled = allEnabled || enabledTracers.size > 0;
 function trace(severity, tracer, text) {
     if (isTracerEnabled(tracer)) {
         (0, exports.log)(severity, new Date().toISOString() +
@@ -8206,6 +8334,9 @@ function trace(severity, tracer, text) {
     }
 }
 function isTracerEnabled(tracer) {
+    if (!anyTracerEnabled) {
+        return false;
+    }
     return (!disabledTracers.has(tracer) && (allEnabled || enabledTracers.has(tracer)));
 }
 //# sourceMappingURL=logging.js.map
@@ -8431,7 +8562,6 @@ function validate(key, value) {
 class Metadata {
     constructor(options = {}) {
         this.internalRepr = new Map();
-        this.opaqueData = new Map();
         this.options = options;
     }
     /**
@@ -8541,15 +8671,17 @@ class Metadata {
      * Creates an OutgoingHttpHeaders object that can be used with the http2 API.
      */
     toHttp2Headers() {
-        // NOTE: Node <8.9 formats http2 headers incorrectly.
         const result = {};
         for (const [key, values] of this.internalRepr) {
             if (key.startsWith(':')) {
                 continue;
             }
-            // We assume that the user's interaction with this object is limited to
-            // through its public API (i.e. keys and values are already validated).
-            result[key] = values.map(bufToString);
+            if (values.length === 1) {
+                result[key] = bufToString(values[0]);
+            }
+            else {
+                result[key] = values.map(bufToString);
+            }
         }
         return result;
     }
@@ -8573,6 +8705,9 @@ class Metadata {
      * @param value
      */
     setOpaque(key, value) {
+        if (!this.opaqueData) {
+            this.opaqueData = new Map();
+        }
         this.opaqueData.set(key, value);
     }
     /**
@@ -8581,7 +8716,8 @@ class Metadata {
      * @returns
      */
     getOpaque(key) {
-        return this.opaqueData.get(key);
+        var _a;
+        return (_a = this.opaqueData) === null || _a === void 0 ? void 0 : _a.get(key);
     }
     /**
      * Returns a new Metadata object based fields in a given IncomingHttpHeaders
@@ -9874,7 +10010,7 @@ class ResolvingCall {
         this.metadata = null;
         this.listener = null;
         this.statusWatchers = [];
-        this.deadlineTimer = setTimeout(() => { }, 0);
+        this.deadlineTimer = null;
         this.filterStack = null;
         this.deadlineStartTime = null;
         this.configReceivedTime = null;
@@ -9894,37 +10030,52 @@ class ResolvingCall {
                 });
             }
             if (options.flags & constants_1.Propagate.DEADLINE) {
-                this.trace('Propagating deadline from parent: ' +
-                    options.parentCall.getDeadline());
+                if (this.traceEnabled) {
+                    this.trace('Propagating deadline from parent: ' +
+                        options.parentCall.getDeadline());
+                }
                 this.deadline = (0, deadline_1.minDeadline)(this.deadline, options.parentCall.getDeadline());
             }
         }
         this.trace('Created');
         this.runDeadlineTimer();
     }
+    get traceEnabled() {
+        return logging.isTracerEnabled(TRACER_NAME);
+    }
     trace(text) {
-        logging.trace(constants_1.LogVerbosity.DEBUG, TRACER_NAME, '[' + this.callNumber + '] ' + text);
+        if (this.traceEnabled) {
+            logging.trace(constants_1.LogVerbosity.DEBUG, TRACER_NAME, '[' + this.callNumber + '] ' + text);
+        }
     }
     runDeadlineTimer() {
-        clearTimeout(this.deadlineTimer);
-        this.deadlineStartTime = new Date();
-        this.trace('Deadline: ' + (0, deadline_1.deadlineToString)(this.deadline));
+        if (this.deadlineTimer) {
+            clearTimeout(this.deadlineTimer);
+            this.deadlineTimer = null;
+        }
+        this.deadlineStartTime = Date.now();
+        if (this.traceEnabled) {
+            this.trace('Deadline: ' + (0, deadline_1.deadlineToString)(this.deadline));
+        }
         const timeout = (0, deadline_1.getRelativeTimeout)(this.deadline);
         if (timeout !== Infinity) {
-            this.trace('Deadline will be reached in ' + timeout + 'ms');
+            if (this.traceEnabled) {
+                this.trace('Deadline will be reached in ' + timeout + 'ms');
+            }
             const handleDeadline = () => {
-                if (!this.deadlineStartTime) {
+                this.deadlineTimer = null;
+                if (this.deadlineStartTime === null) {
                     this.cancelWithStatus(constants_1.Status.DEADLINE_EXCEEDED, 'Deadline exceeded');
                     return;
                 }
                 const deadlineInfo = [];
-                const deadlineEndTime = new Date();
+                const deadlineEndTime = Date.now();
                 deadlineInfo.push(`Deadline exceeded after ${(0, deadline_1.formatDateDifference)(this.deadlineStartTime, deadlineEndTime)}`);
-                if (this.configReceivedTime) {
+                if (this.configReceivedTime !== null) {
                     if (this.configReceivedTime > this.deadlineStartTime) {
                         deadlineInfo.push(`name resolution: ${(0, deadline_1.formatDateDifference)(this.deadlineStartTime, this.configReceivedTime)}`);
                     }
-                    if (this.childStartTime) {
+                    if (this.childStartTime !== null) {
                         if (this.childStartTime > this.configReceivedTime) {
                             deadlineInfo.push(`metadata filters: ${(0, deadline_1.formatDateDifference)(this.configReceivedTime, this.childStartTime)}`);
                         }
@@ -9955,13 +10106,18 @@ class ResolvingCall {
             if (!this.filterStack) {
                 this.filterStack = this.filterStackFactory.createFilter();
             }
-            clearTimeout(this.deadlineTimer);
+            if (this.deadlineTimer) {
+                clearTimeout(this.deadlineTimer);
+                this.deadlineTimer = null;
+            }
             const filteredStatus = this.filterStack.receiveTrailers(status);
-            this.trace('ended with status: code=' +
-                filteredStatus.code +
-                ' details="' +
-                filteredStatus.details +
-                '"');
+            if (this.traceEnabled) {
+                this.trace('ended with status: code=' +
+                    filteredStatus.code +
+                    ' details="' +
+                    filteredStatus.details +
+                    '"');
+            }
             this.statusWatchers.forEach(watcher => watcher(filteredStatus));
             process.nextTick(() => {
                 var _a;
@@ -9982,7 +10138,8 @@ class ResolvingCall {
                 child.halfClose();
             }
         }, (status) => {
-            this.cancelWithStatus(status.code, status.details);
+            var _a, _b;
+            this.cancelWithStatus((_a = status.code) !== null && _a !== void 0 ? _a : constants_1.Status.INTERNAL, (_b = status.details) !== null && _b !== void 0 ? _b : 'Failed to write message');
         });
     }
     getConfig() {
@@ -10007,7 +10164,7 @@ class ResolvingCall {
             return;
         }
         // configResult.type === 'SUCCESS'
-        this.configReceivedTime = new Date();
+        this.configReceivedTime = Date.now();
         const config = configResult.config;
         if (config.status !== constants_1.Status.OK) {
             const { code, details } = (0, control_plane_status_1.restrictControlPlaneStatusCode)(config.status, 'Failed to route call to method ' + this.method);
@@ -10019,19 +10176,20 @@ class ResolvingCall {
             return;
         }
         if (config.methodConfig.timeout) {
-            const configDeadline = new Date();
-            configDeadline.setSeconds(configDeadline.getSeconds() + config.methodConfig.timeout.seconds);
-            configDeadline.setMilliseconds(configDeadline.getMilliseconds() +
+            const timeoutMs = Math.floor(config.methodConfig.timeout.seconds * 1000 +
                 config.methodConfig.timeout.nanos / 1000000);
+            const configDeadline = Date.now() + timeoutMs;
             this.deadline = (0, deadline_1.minDeadline)(this.deadline, configDeadline);
             this.runDeadlineTimer();
         }
         this.filterStackFactory.push(config.dynamicFilterFactories);
         this.filterStack = this.filterStackFactory.createFilter();
         this.filterStack.sendMetadata(Promise.resolve(this.metadata)).then(filteredMetadata => {
-            this.child = this.channel.createRetryingCall(config, this.method, this.host, this.credentials, this.deadline);
-            this.trace('Created child [' + this.child.getCallNumber() + ']');
-            this.childStartTime = new Date();
+            this.child = this.channel.createRetryingCall(config, this.method, this.host, this.credentials, this.deadline, this.callNumber);
+            if (this.traceEnabled) {
+                this.trace('Created child [' + this.child.getCallNumber() + ']');
+            }
+            this.childStartTime = Date.now();
             this.child.start(filteredMetadata, {
                 onReceiveMetadata: metadata => {
                     this.trace('Received metadata');
@@ -10085,7 +10243,9 @@ class ResolvingCall {
     }
     cancelWithStatus(status, details) {
         var _a;
-        this.trace('cancelWithStatus code: ' + status + ' details: "' + details + '"');
+        if (this.traceEnabled) {
+            this.trace('cancelWithStatus code: ' + status + ' details: "' + details + '"');
+        }
         (_a = this.child) === null || _a === void 0 ? void 0 : _a.cancelWithStatus(status, details);
         this.outputStatus({
             code: status,
@@ -10104,7 +10264,9 @@ class ResolvingCall {
         this.getConfig();
     }
     sendMessageWithContext(context, message) {
-        this.trace('write() called with message of length ' + message.length);
+        if (this.traceEnabled) {
+            this.trace('write() called with message of length ' + message.length);
+        }
         if (this.child) {
             this.sendMessageOnChild(context, message);
         }
@@ -10176,6 +10338,7 @@ exports.ResolvingCall = ResolvingCall;
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ResolvingLoadBalancer = void 0;
+exports.getDefaultConfigSelector = getDefaultConfigSelector;
 const load_balancer_1 = __nccwpck_require__(7000);
 const service_config_1 = __nccwpck_require__(70005);
 const connectivity_state_1 = __nccwpck_require__(60778);
@@ -10230,40 +10393,47 @@ function findMatchingConfig(service, method, methodConfigs, matchLevel) {
     }
     return null;
 }
+const MAX_CACHED_METHOD_CONFIGS = 100;
 function getDefaultConfigSelector(serviceConfig) {
+    const methodConfigCache = new Map();
     return {
-        invoke(methodName, metadata) {
+        invoke(methodName, metadata, channelId) {
             var _a, _b;
-            const splitName = methodName.split('/').filter(x => x.length > 0);
-            const service = (_a = splitName[0]) !== null && _a !== void 0 ? _a : '';
-            const method = (_b = splitName[1]) !== null && _b !== void 0 ? _b : '';
-            if (serviceConfig && serviceConfig.methodConfig) {
-                /* Check for the following in order, and return the first method
-                * config that matches:
-                * 1. A name that exactly matches the service and method
-                * 2. A name with no method set that matches the service
-                * 3. An empty name
-                */
-                for (const matchLevel of NAME_MATCH_LEVEL_ORDER) {
-                    const matchingConfig = findMatchingConfig(service, method, serviceConfig.methodConfig, matchLevel);
-                    if (matchingConfig) {
-                        return {
-                            methodConfig: matchingConfig,
-                            pickInformation: {},
-                            status: constants_1.Status.OK,
-                            dynamicFilterFactories: [],
-                        };
+            let matchingConfig = methodConfigCache.get(methodName);
+            if (matchingConfig === undefined) {
+                const splitName = methodName.split('/').filter(x => x.length > 0);
+                const service = (_a = splitName[0]) !== null && _a !== void 0 ? _a : '';
+                const method = (_b = splitName[1]) !== null && _b !== void 0 ? _b : '';
+                matchingConfig = { name: [] };
+                if (serviceConfig && serviceConfig.methodConfig) {
+                    /* Check for the following in order, and return the first method
+                     * config that matches:
+                     * 1. A name that exactly matches the service and method
+                     * 2. A name with no method set that matches the service
+                     * 3. An empty name
+                     */
+                    for (const matchLevel of NAME_MATCH_LEVEL_ORDER) {
+                        const foundConfig = findMatchingConfig(service, method, serviceConfig.methodConfig, matchLevel);
+                        if (foundConfig) {
+                            matchingConfig = foundConfig;
+                            break;
+                        }
                     }
+                }
+                if (methodConfigCache.size < MAX_CACHED_METHOD_CONFIGS) {
+                    methodConfigCache.set(methodName, matchingConfig);
                 }
             }
             return {
-                methodConfig: { name: [] },
+                methodConfig: matchingConfig,
                 pickInformation: {},
                 status: constants_1.Status.OK,
                 dynamicFilterFactories: [],
             };
         },
-        unref() { }
+        unref() {
+            methodConfigCache.clear();
+        }
     };
 }
 class ResolvingLoadBalancer {
@@ -10491,6 +10661,7 @@ const constants_1 = __nccwpck_require__(68288);
 const deadline_1 = __nccwpck_require__(52173);
 const metadata_1 = __nccwpck_require__(36100);
 const logging = __nccwpck_require__(8536);
+const call_number_1 = __nccwpck_require__(35675);
 const TRACER_NAME = 'retrying_call';
 class RetryThrottler {
     constructor(maxTokens, tokenRatio, previousRetryThrottler) {
@@ -10618,7 +10789,7 @@ class RetryingCall {
             this.state = 'TRANSPARENT_ONLY';
             this.maxAttempts = 1;
         }
-        this.startTime = new Date();
+        this.startTime = Date.now();
     }
     getDeadlineInfo() {
         if (this.underlyingCalls.length === 0) {
@@ -10638,16 +10809,23 @@ class RetryingCall {
     getCallNumber() {
         return this.callNumber;
     }
+    get traceEnabled() {
+        return logging.isTracerEnabled(TRACER_NAME);
+    }
     trace(text) {
-        logging.trace(constants_1.LogVerbosity.DEBUG, TRACER_NAME, '[' + this.callNumber + '] ' + text);
+        if (this.traceEnabled) {
+            logging.trace(constants_1.LogVerbosity.DEBUG, TRACER_NAME, '[' + this.callNumber + '] ' + text);
+        }
     }
     reportStatus(statusObject) {
-        this.trace('ended with status: code=' +
-            statusObject.code +
-            ' details="' +
-            statusObject.details +
-            '" start time=' +
-            this.startTime.toISOString());
+        if (this.traceEnabled) {
+            this.trace('ended with status: code=' +
+                statusObject.code +
+                ' details="' +
+                statusObject.details +
+                '" start time=' +
+                new Date(this.startTime).toISOString());
+        }
         this.bufferTracker.freeAll(this.callNumber);
         this.writeBufferOffset = this.writeBufferOffset + this.writeBuffer.length;
         this.writeBuffer = [];
@@ -10662,7 +10840,9 @@ class RetryingCall {
         });
     }
     cancelWithStatus(status, details) {
-        this.trace('cancelWithStatus code: ' + status + ' details: "' + details + '"');
+        if (this.traceEnabled) {
+            this.trace('cancelWithStatus code: ' + status + ' details: "' + details + '"');
+        }
         this.reportStatus({ code: status, details, metadata: new metadata_1.Metadata() });
         for (const { call } of this.underlyingCalls) {
             call.cancelWithStatus(status, details);
@@ -10714,10 +10894,12 @@ class RetryingCall {
         if (this.state === 'COMMITTED') {
             return;
         }
-        this.trace('Committing call [' +
-            this.underlyingCalls[index].call.getCallNumber() +
-            '] at index ' +
-            index);
+        if (this.traceEnabled) {
+            this.trace('Committing call [' +
+                this.underlyingCalls[index].call.getCallNumber() +
+                '] at index ' +
+                index);
+        }
         this.state = 'COMMITTED';
         (_b = (_a = this.callConfig).onCommitted) === null || _b === void 0 ? void 0 : _b.call(_a);
         this.committedCallIndex = index;
@@ -10899,14 +11081,16 @@ class RetryingCall {
         if (this.underlyingCalls[callIndex].state === 'COMPLETED') {
             return;
         }
-        this.trace('state=' +
-            this.state +
-            ' handling status with progress ' +
-            status.progress +
-            ' from child [' +
-            this.underlyingCalls[callIndex].call.getCallNumber() +
-            '] in state ' +
-            this.underlyingCalls[callIndex].state);
+        if (this.traceEnabled) {
+            this.trace('state=' +
+                this.state +
+                ' handling status with progress ' +
+                status.progress +
+                ' from child [' +
+                this.underlyingCalls[callIndex].call.getCallNumber() +
+                '] in state ' +
+                this.underlyingCalls[callIndex].state);
+        }
         this.underlyingCalls[callIndex].state = 'COMPLETED';
         if (status.code === constants_1.Status.OK) {
             (_a = this.retryThrottler) === null || _a === void 0 ? void 0 : _a.addCallSucceeded();
@@ -10985,27 +11169,33 @@ class RetryingCall {
         (_c = (_b = this.hedgingTimer).unref) === null || _c === void 0 ? void 0 : _c.call(_b);
     }
     startNewAttempt() {
-        const child = this.channel.createLoadBalancingCall(this.callConfig, this.methodName, this.host, this.credentials, this.deadline);
-        this.trace('Created child call [' +
-            child.getCallNumber() +
-            '] for attempt ' +
-            this.attempts);
+        const childCallNumber = this.underlyingCalls.length > 0 ? (0, call_number_1.getNextCallNumber)() : this.callNumber;
+        const child = this.channel.createLoadBalancingCall(this.callConfig, this.methodName, this.host, this.credentials, this.deadline, childCallNumber);
+        if (this.traceEnabled) {
+            this.trace('Created child call [' +
+                child.getCallNumber() +
+                '] for attempt ' +
+                this.attempts);
+        }
         const index = this.underlyingCalls.length;
         this.underlyingCalls.push({
             state: 'ACTIVE',
             call: child,
             nextMessageToSend: 0,
-            startTime: new Date(),
+            startTime: Date.now(),
         });
         const previousAttempts = this.attempts - 1;
-        const initialMetadata = this.initialMetadata.clone();
+        let initialMetadata = this.initialMetadata;
         if (previousAttempts > 0) {
+            initialMetadata = initialMetadata.clone();
             initialMetadata.set(PREVIONS_RPC_ATTEMPTS_METADATA_KEY, `${previousAttempts}`);
         }
         let receivedMetadata = false;
         child.start(initialMetadata, {
             onReceiveMetadata: metadata => {
-                this.trace('Received metadata from child [' + child.getCallNumber() + ']');
+                if (this.traceEnabled) {
+                    this.trace('Received metadata from child [' + child.getCallNumber() + ']');
+                }
                 this.commitCall(index);
                 receivedMetadata = true;
                 if (previousAttempts > 0) {
@@ -11016,14 +11206,18 @@ class RetryingCall {
                 }
             },
             onReceiveMessage: message => {
-                this.trace('Received message from child [' + child.getCallNumber() + ']');
+                if (this.traceEnabled) {
+                    this.trace('Received message from child [' + child.getCallNumber() + ']');
+                }
                 this.commitCall(index);
                 if (this.underlyingCalls[index].state === 'ACTIVE') {
                     this.listener.onReceiveMessage(message);
                 }
             },
             onReceiveStatus: status => {
-                this.trace('Received status from child [' + child.getCallNumber() + ']');
+                if (this.traceEnabled) {
+                    this.trace('Received status from child [' + child.getCallNumber() + ']');
+                }
                 if (!receivedMetadata && previousAttempts > 0) {
                     status.metadata.set(PREVIONS_RPC_ATTEMPTS_METADATA_KEY, `${previousAttempts}`);
                 }
@@ -11072,9 +11266,11 @@ class RetryingCall {
                     // has already been passed to the underlying transport.
                     const nextEntry = this.getBufferEntry(messageIndex + 1);
                     if (nextEntry.entryType === 'HALF_CLOSE') {
-                        this.trace('Sending halfClose immediately after message to child [' +
-                            childCall.call.getCallNumber() +
-                            '] - optimizing for unary/final message');
+                        if (this.traceEnabled) {
+                            this.trace('Sending halfClose immediately after message to child [' +
+                                childCall.call.getCallNumber() +
+                                '] - optimizing for unary/final message');
+                        }
                         childCall.nextMessageToSend += 1;
                         childCall.call.halfClose();
                     }
@@ -11090,7 +11286,9 @@ class RetryingCall {
         }
     }
     sendMessageWithContext(context, message) {
-        this.trace('write() called with message of length ' + message.length);
+        if (this.traceEnabled) {
+            this.trace('write() called with message of length ' + message.length);
+        }
         const writeObj = {
             message,
             flags: context.flags,
@@ -11162,9 +11360,11 @@ class RetryingCall {
                 // - nextMessageToSend === halfCloseIndex: all messages sent and acknowledged
                 if (call.nextMessageToSend === halfCloseIndex
                     || call.nextMessageToSend === halfCloseIndex - 1) {
-                    this.trace('Sending halfClose immediately to child [' +
-                        call.call.getCallNumber() +
-                        '] - all messages already sent');
+                    if (this.traceEnabled) {
+                        this.trace('Sending halfClose immediately to child [' +
+                            call.call.getCallNumber() +
+                            '] - all messages already sent');
+                    }
                     call.nextMessageToSend += 1;
                     call.call.halfClose();
                 }
@@ -11783,6 +11983,7 @@ const stream_decoder_1 = __nccwpck_require__(47956);
 const logging = __nccwpck_require__(8536);
 const tls_1 = __nccwpck_require__(64756);
 const orca_1 = __nccwpck_require__(82124);
+const environment_1 = __nccwpck_require__(16964);
 const TRACER_NAME = 'server_call';
 function trace(text) {
     logging.trace(constants_1.LogVerbosity.DEBUG, TRACER_NAME, text);
@@ -12196,8 +12397,7 @@ class BaseServerInterceptingCall {
             return;
         }
         const timeout = (+match[1] * deadlineUnitsToMs[match[2]]) | 0;
-        const now = new Date();
-        this.deadline = now.setMilliseconds(now.getMilliseconds() + timeout);
+        this.deadline = Date.now() + timeout;
         this.deadlineTimer = setTimeout(() => {
             const status = {
                 code: constants_1.Status.DEADLINE_EXCEEDED,
@@ -12325,9 +12525,16 @@ class BaseServerInterceptingCall {
             queueEntry.parsedMessage = this.handler.deserialize(decompressedMessage);
         }
         catch (err) {
+            let details;
+            if (environment_1.GRPC_NODE_DEBUG_SEND_ERROR_DETAILS) {
+                details = `Error deserializing request: ${err.message}`;
+            }
+            else {
+                details = 'Error deserializing request';
+            }
             this.sendStatus({
                 code: constants_1.Status.INTERNAL,
-                details: `Error deserializing request: ${err.message}`,
+                details: details,
             });
             return;
         }
@@ -12417,9 +12624,16 @@ class BaseServerInterceptingCall {
             response = this.serializeMessage(message);
         }
         catch (e) {
+            let details;
+            if (environment_1.GRPC_NODE_DEBUG_SEND_ERROR_DETAILS) {
+                details = `Error serializing response: ${(0, error_1.getErrorMessage)(e)}`;
+            }
+            else {
+                details = 'Error serializing response';
+            }
             this.sendStatus({
                 code: constants_1.Status.INTERNAL,
-                details: `Error serializing response: ${(0, error_1.getErrorMessage)(e)}`,
+                details: details,
                 metadata: null,
             });
             return;
@@ -12441,9 +12655,16 @@ class BaseServerInterceptingCall {
         this.stream.write(response, error => {
             var _a;
             if (error) {
+                let details;
+                if (environment_1.GRPC_NODE_DEBUG_SEND_ERROR_DETAILS) {
+                    details = `Error writing message: ${(0, error_1.getErrorMessage)(error)}`;
+                }
+                else {
+                    details = 'Internal server error';
+                }
                 this.sendStatus({
                     code: constants_1.Status.INTERNAL,
-                    details: `Error writing message: ${(0, error_1.getErrorMessage)(error)}`,
+                    details: details,
                     metadata: null,
                 });
                 return;
@@ -12536,16 +12757,17 @@ class BaseServerInterceptingCall {
     }
     getAuthContext() {
         var _a;
-        if (((_a = this.stream.session) === null || _a === void 0 ? void 0 : _a.socket) instanceof tls_1.TLSSocket) {
-            const peerCertificate = this.stream.session.socket.getPeerCertificate();
-            return {
-                transportSecurityType: 'ssl',
-                sslPeerCertificate: peerCertificate.raw ? peerCertificate : undefined
-            };
-        }
-        else {
+        if (!(((_a = this.stream.session) === null || _a === void 0 ? void 0 : _a.socket) instanceof tls_1.TLSSocket)) {
             return {};
         }
+        if (!this.stream.session.socket.authorized) {
+            return {};
+        }
+        const peerCertificate = this.stream.session.socket.getPeerCertificate();
+        return {
+            transportSecurityType: 'ssl',
+            sslPeerCertificate: peerCertificate.raw ? peerCertificate : undefined
+        };
     }
     getConnectionInfo() {
         return this.connectionInfo;
@@ -12640,6 +12862,7 @@ const subchannel_address_1 = __nccwpck_require__(97021);
 const uri_parser_1 = __nccwpck_require__(56027);
 const channelz_1 = __nccwpck_require__(68198);
 const server_interceptors_1 = __nccwpck_require__(42151);
+const environment_1 = __nccwpck_require__(16964);
 const UNLIMITED_CONNECTION_AGE_MS = ~(1 << 31);
 const KEEPALIVE_MAX_TIME_MS = ~(1 << 31);
 const KEEPALIVE_TIMEOUT_MS = 20000;
@@ -13542,13 +13765,13 @@ let Server = (() => {
                     addMessageSent: () => {
                         if (channelzSessionInfo) {
                             channelzSessionInfo.messagesSent += 1;
-                            channelzSessionInfo.lastMessageSentTimestamp = new Date();
+                            channelzSessionInfo.lastMessageSentTimestamp = Date.now();
                         }
                     },
                     addMessageReceived: () => {
                         if (channelzSessionInfo) {
                             channelzSessionInfo.messagesReceived += 1;
-                            channelzSessionInfo.lastMessageReceivedTimestamp = new Date();
+                            channelzSessionInfo.lastMessageReceivedTimestamp = Date.now();
                         }
                     },
                     onCallEnd: status => {
@@ -14056,9 +14279,16 @@ async function handleUnary(call, handler) {
                 handler.func(stream, respond);
             }
             catch (err) {
+                let details;
+                if (environment_1.GRPC_NODE_DEBUG_SEND_ERROR_DETAILS) {
+                    details = `Server method handler threw error ${err.message}`;
+                }
+                else {
+                    details = 'Unknown error';
+                }
                 call.sendStatus({
                     code: constants_1.Status.UNKNOWN,
-                    details: `Server method handler threw error ${err.message}`,
+                    details: details,
                     metadata: null,
                 });
             }
@@ -14093,9 +14323,16 @@ function handleClientStreaming(call, handler) {
                 handler.func(stream, respond);
             }
             catch (err) {
+                let details;
+                if (environment_1.GRPC_NODE_DEBUG_SEND_ERROR_DETAILS) {
+                    details = `Server method handler threw error ${err.message}`;
+                }
+                else {
+                    details = 'Unknown error';
+                }
                 call.sendStatus({
                     code: constants_1.Status.UNKNOWN,
-                    details: `Server method handler threw error ${err.message}`,
+                    details: details,
                     metadata: null,
                 });
             }
@@ -14150,9 +14387,16 @@ function handleServerStreaming(call, handler) {
                 handler.func(stream);
             }
             catch (err) {
+                let details;
+                if (environment_1.GRPC_NODE_DEBUG_SEND_ERROR_DETAILS) {
+                    details = `Server method handler threw error ${err.message}`;
+                }
+                else {
+                    details = 'Unknown error';
+                }
                 call.sendStatus({
                     code: constants_1.Status.UNKNOWN,
-                    details: `Server method handler threw error ${err.message}`,
+                    details: details,
                     metadata: null,
                 });
             }
@@ -14175,9 +14419,16 @@ function handleBidiStreaming(call, handler) {
                 handler.func(stream);
             }
             catch (err) {
+                let details;
+                if (environment_1.GRPC_NODE_DEBUG_SEND_ERROR_DETAILS) {
+                    details = `Server method handler threw error ${err.message}`;
+                }
+                else {
+                    details = 'Unknown error';
+                }
                 call.sendStatus({
                     code: constants_1.Status.UNKNOWN,
-                    details: `Server method handler threw error ${err.message}`,
+                    details: details,
                     metadata: null,
                 });
             }
@@ -14674,7 +14925,6 @@ const resolver_1 = __nccwpck_require__(76255);
 const uri_parser_1 = __nccwpck_require__(56027);
 class SubchannelCallWrapper {
     constructor(subchannel, method, filterStackFactory, options, callNumber) {
-        var _a, _b;
         this.subchannel = subchannel;
         this.method = method;
         this.options = options;
@@ -14686,18 +14936,7 @@ class SubchannelCallWrapper {
         this.pendingStatus = null;
         this.readFilterPending = false;
         this.writeFilterPending = false;
-        const splitPath = this.method.split('/');
-        let serviceName = '';
-        /* The standard path format is "/{serviceName}/{methodName}", so if we split
-          * by '/', the first item should be empty and the second should be the
-          * service name */
-        if (splitPath.length >= 2) {
-            serviceName = splitPath[1];
-        }
-        const hostname = (_b = (_a = (0, uri_parser_1.splitHostPort)(this.options.host)) === null || _a === void 0 ? void 0 : _a.host) !== null && _b !== void 0 ? _b : 'localhost';
-        /* Currently, call credentials are only allowed on HTTPS connections, so we
-          * can assume that the scheme is "https" */
-        this.serviceUrl = `https://${hostname}/${serviceName}`;
+        this.serviceUrl = (0, uri_parser_1.computeServiceUrl)(this.options.host, this.method);
         const timeout = (0, deadline_1.getRelativeTimeout)(options.deadline);
         if (timeout !== Infinity) {
             if (timeout <= 0) {
@@ -14780,7 +15019,7 @@ class SubchannelCallWrapper {
                 }
             }
         };
-        this.childCall = this.subchannel.createCall(credsMetadata, this.options.host, this.method, childListener);
+        this.childCall = this.subchannel.createCall(credsMetadata, this.options.host, this.method, childListener, this.callNumber);
         if (this.readPending) {
             this.childCall.startRead();
         }
@@ -15384,11 +15623,13 @@ class Http2SubchannelCall {
         const maxReceiveMessageLength = (_a = transport.getOptions()['grpc.max_receive_message_length']) !== null && _a !== void 0 ? _a : constants_1.DEFAULT_MAX_RECEIVE_MESSAGE_LENGTH;
         this.decoder = new stream_decoder_1.StreamDecoder(maxReceiveMessageLength);
         http2Stream.on('response', (headers, flags) => {
-            let headersString = '';
-            for (const header of Object.keys(headers)) {
-                headersString += '\t\t' + header + ': ' + headers[header] + '\n';
+            if (this.traceEnabled) {
+                let headersString = '';
+                for (const header of Object.keys(headers)) {
+                    headersString += '\t\t' + header + ': ' + headers[header] + '\n';
+                }
+                this.trace('Received server headers:\n' + headersString);
             }
-            this.trace('Received server headers:\n' + headersString);
             this.httpStatusCode = headers[':status'];
             if (flags & http2.constants.NGHTTP2_FLAG_END_STREAM) {
                 this.handleTrailers(headers);
@@ -15418,7 +15659,9 @@ class Http2SubchannelCall {
             if (this.statusOutput) {
                 return;
             }
-            this.trace('receive HTTP/2 data frame of length ' + data.length);
+            if (this.traceEnabled) {
+                this.trace('receive HTTP/2 data frame of length ' + data.length);
+            }
             let messages;
             try {
                 messages = this.decoder.write(data);
@@ -15444,7 +15687,9 @@ class Http2SubchannelCall {
                 return;
             }
             for (const message of messages) {
-                this.trace('parsed message of length ' + message.length);
+                if (this.traceEnabled) {
+                    this.trace('parsed message of length ' + message.length);
+                }
                 this.callEventTracker.addMessageReceived();
                 this.tryPush(message);
             }
@@ -15460,7 +15705,9 @@ class Http2SubchannelCall {
              * we can bubble up the error message from that event. */
             process.nextTick(() => {
                 var _a;
-                this.trace('HTTP/2 stream closed with code ' + http2Stream.rstCode);
+                if (this.traceEnabled) {
+                    this.trace('HTTP/2 stream closed with code ' + http2Stream.rstCode);
+                }
                 /* If we have a final status with an OK status code, that means that
                  * we have received all of the messages and we have processed the
                  * trailers and the call completed successfully, so it doesn't matter
@@ -15563,14 +15810,16 @@ class Http2SubchannelCall {
              * https://github.com/nodejs/node/blob/8b8620d580314050175983402dfddf2674e8e22a/lib/internal/http2/core.js#L2267
              */
             if (err.code !== 'ERR_HTTP2_STREAM_ERROR') {
-                this.trace('Node error event: message=' +
-                    err.message +
-                    ' code=' +
-                    err.code +
-                    ' errno=' +
-                    getSystemErrorName(err.errno) +
-                    ' syscall=' +
-                    err.syscall);
+                if (this.traceEnabled) {
+                    this.trace('Node error event: message=' +
+                        err.message +
+                        ' code=' +
+                        err.code +
+                        ' errno=' +
+                        getSystemErrorName(err.errno) +
+                        ' syscall=' +
+                        err.syscall);
+                }
                 this.internalError = err;
             }
             this.callEventTracker.onStreamEnd(false);
@@ -15595,11 +15844,13 @@ class Http2SubchannelCall {
         /* Precondition: this.finalStatus !== null */
         if (!this.statusOutput) {
             this.statusOutput = true;
-            this.trace('ended with status: code=' +
-                this.finalStatus.code +
-                ' details="' +
-                this.finalStatus.details +
-                '"');
+            if (this.traceEnabled) {
+                this.trace('ended with status: code=' +
+                    this.finalStatus.code +
+                    ' details="' +
+                    this.finalStatus.details +
+                    '"');
+            }
             this.callEventTracker.onCallEnd(this.finalStatus);
             /* We delay the actual action of bubbling up the status to insulate the
              * cleanup code in this class from any errors that may be thrown in the
@@ -15617,8 +15868,13 @@ class Http2SubchannelCall {
             this.http2Stream.resume();
         }
     }
+    get traceEnabled() {
+        return logging.isTracerEnabled(TRACER_NAME);
+    }
     trace(text) {
-        logging.trace(constants_2.LogVerbosity.DEBUG, TRACER_NAME, '[' + this.callId + '] ' + text);
+        if (this.traceEnabled) {
+            logging.trace(constants_2.LogVerbosity.DEBUG, TRACER_NAME, '[' + this.callId + '] ' + text);
+        }
     }
     /**
      * On first call, emits a 'status' event with the given StatusObject.
@@ -15649,8 +15905,10 @@ class Http2SubchannelCall {
         }
     }
     push(message) {
-        this.trace('pushing to reader message of length ' +
-            (message instanceof Buffer ? message.length : null));
+        if (this.traceEnabled) {
+            this.trace('pushing to reader message of length ' +
+                (message instanceof Buffer ? message.length : null));
+        }
         this.canPush = false;
         this.isPushPending = true;
         process.nextTick(() => {
@@ -15672,18 +15930,22 @@ class Http2SubchannelCall {
             this.push(messageBytes);
         }
         else {
-            this.trace('unpushedReadMessages.push message of length ' + messageBytes.length);
+            if (this.traceEnabled) {
+                this.trace('unpushedReadMessages.push message of length ' + messageBytes.length);
+            }
             this.unpushedReadMessages.push(messageBytes);
         }
     }
     handleTrailers(headers) {
         this.serverEndedCall = true;
         this.callEventTracker.onStreamEnd(true);
-        let headersString = '';
-        for (const header of Object.keys(headers)) {
-            headersString += '\t\t' + header + ': ' + headers[header] + '\n';
+        if (this.traceEnabled) {
+            let headersString = '';
+            for (const header of Object.keys(headers)) {
+                headersString += '\t\t' + header + ': ' + headers[header] + '\n';
+            }
+            this.trace('Received server trailers:\n' + headersString);
         }
-        this.trace('Received server trailers:\n' + headersString);
         let metadata;
         try {
             metadata = metadata_1.Metadata.fromHttp2Headers(headers);
@@ -15691,27 +15953,33 @@ class Http2SubchannelCall {
         catch (e) {
             metadata = new metadata_1.Metadata();
         }
-        const metadataMap = metadata.getMap();
+        const statusValues = metadata.get('grpc-status');
         let status;
-        if (typeof metadataMap['grpc-status'] === 'string') {
-            const receivedStatus = Number(metadataMap['grpc-status']);
-            this.trace('received status code ' + receivedStatus + ' from server');
+        if (statusValues.length > 0 && typeof statusValues[0] === 'string') {
+            const receivedStatus = Number(statusValues[0]);
+            if (this.traceEnabled) {
+                this.trace('received status code ' + receivedStatus + ' from server');
+            }
             metadata.remove('grpc-status');
             let details = '';
-            if (typeof metadataMap['grpc-message'] === 'string') {
+            const messageValues = metadata.get('grpc-message');
+            if (messageValues.length > 0 && typeof messageValues[0] === 'string') {
+                const messageString = messageValues[0];
                 try {
-                    details = decodeURI(metadataMap['grpc-message']);
+                    details = decodeURI(messageString);
                 }
-                catch (e) {
-                    details = metadataMap['grpc-message'];
+                catch (error) {
+                    details = messageString;
                 }
                 metadata.remove('grpc-message');
-                this.trace('received status details string "' + details + '" from server');
+                if (this.traceEnabled) {
+                    this.trace('received status details string "' + details + '" from server');
+                }
             }
             status = {
                 code: receivedStatus,
                 details: details,
-                metadata: metadata
+                metadata: metadata,
             };
         }
         else if (this.httpStatusCode) {
@@ -15722,7 +15990,7 @@ class Http2SubchannelCall {
             status = {
                 code: constants_1.Status.UNKNOWN,
                 details: 'No status information received',
-                metadata: metadata
+                metadata: metadata,
             };
         }
         // This is a no-op if the call was already ended when handling headers.
@@ -15737,9 +16005,20 @@ class Http2SubchannelCall {
         }
         /* If the server ended the call, sending an RST_STREAM is redundant, so we
          * just half close on the client side instead to finish closing the stream.
+         *
+         * Only call end() if writableEnded is false. For unary and server-streaming
+         * calls (and client streams where the client already finished sending),
+         * halfClose() has already called http2Stream.end(). Calling end() again on
+         * an already finished Node stream causes Node core stream internals to
+         * construct an ERR_STREAM_ALREADY_FINISHED Error (which synchronously captures
+         * a full native V8 stack trace) and immediately discard it because no callback
+         * is passed. On high-throughput workloads, this causes unnecessary CPU
+         * overhead and garbage collection pressure.
          */
         if (this.serverEndedCall) {
-            this.http2Stream.end();
+            if (!this.http2Stream.writableEnded) {
+                this.http2Stream.end();
+            }
         }
         else {
             /* If the call has ended with an OK status, communicate that when closing
@@ -15752,12 +16031,16 @@ class Http2SubchannelCall {
             else {
                 code = http2.constants.NGHTTP2_CANCEL;
             }
-            this.trace('close http2 stream with code ' + code);
+            if (this.traceEnabled) {
+                this.trace('close http2 stream with code ' + code);
+            }
             this.http2Stream.close(code);
         }
     }
     cancelWithStatus(status, details) {
-        this.trace('cancelWithStatus code: ' + status + ' details: "' + details + '"');
+        if (this.traceEnabled) {
+            this.trace('cancelWithStatus code: ' + status + ' details: "' + details + '"');
+        }
         this.endCall({ code: status, details, metadata: new metadata_1.Metadata() });
     }
     getStatus() {
@@ -15791,7 +16074,9 @@ class Http2SubchannelCall {
         this.http2Stream.resume();
     }
     sendMessageWithContext(context, message) {
-        this.trace('write() called with message of length ' + message.length);
+        if (this.traceEnabled) {
+            this.trace('write() called with message of length ' + message.length);
+        }
         const cb = (error) => {
             /* nextTick here ensures that no stream action can be taken in the call
              * stack of the write callback, in order to hopefully work around
@@ -15809,7 +16094,9 @@ class Http2SubchannelCall {
                 (_a = context.callback) === null || _a === void 0 ? void 0 : _a.call(context);
             });
         };
-        this.trace('sending data chunk of length ' + message.length);
+        if (this.traceEnabled) {
+            this.trace('sending data chunk of length ' + message.length);
+        }
         this.callEventTracker.addMessageSent();
         try {
             this.http2Stream.write(message, cb);
@@ -15824,6 +16111,14 @@ class Http2SubchannelCall {
     }
     halfClose() {
         this.trace('end() called');
+        /* Calling end() on a stream that is already ended or destroyed causes Node
+         * core stream internals to construct ERR_STREAM_ALREADY_FINISHED or
+         * ERR_STREAM_DESTROYED Error instances with synchronous native V8 stack traces,
+         * which are immediately discarded when no callback is passed.
+         */
+        if (this.http2Stream.destroyed || this.http2Stream.writableEnded) {
+            return;
+        }
         this.trace('calling end() on HTTP/2 stream');
         this.http2Stream.end();
     }
@@ -16204,8 +16499,10 @@ class Subchannel {
         }
         this.channelzRef = (0, channelz_1.registerChannelzSubchannel)(this.subchannelAddressString, () => this.getChannelzInfo(), this.channelzEnabled);
         this.channelzTrace.addTrace('CT_INFO', 'Subchannel created');
-        this.trace('Subchannel constructed with options ' +
-            JSON.stringify(options, undefined, 2));
+        if (this.traceEnabled) {
+            this.trace('Subchannel constructed with options ' +
+                JSON.stringify(options, undefined, 2));
+        }
         this.secureConnector = credentials._createSecureConnector(channelTarget, options);
     }
     getChannelzInfo() {
@@ -16217,21 +16514,31 @@ class Subchannel {
             target: this.subchannelAddressString,
         };
     }
+    get traceEnabled() {
+        return logging.isTracerEnabled(TRACER_NAME);
+    }
+    get refTraceEnabled() {
+        return logging.isTracerEnabled('subchannel_refcount');
+    }
     trace(text) {
-        logging.trace(constants_1.LogVerbosity.DEBUG, TRACER_NAME, '(' +
-            this.channelzRef.id +
-            ') ' +
-            this.subchannelAddressString +
-            ' ' +
-            text);
+        if (this.traceEnabled) {
+            logging.trace(constants_1.LogVerbosity.DEBUG, TRACER_NAME, '(' +
+                this.channelzRef.id +
+                ') ' +
+                this.subchannelAddressString +
+                ' ' +
+                text);
+        }
     }
     refTrace(text) {
-        logging.trace(constants_1.LogVerbosity.DEBUG, 'subchannel_refcount', '(' +
-            this.channelzRef.id +
-            ') ' +
-            this.subchannelAddressString +
-            ' ' +
-            text);
+        if (this.refTraceEnabled) {
+            logging.trace(constants_1.LogVerbosity.DEBUG, 'subchannel_refcount', '(' +
+                this.channelzRef.id +
+                ') ' +
+                this.subchannelAddressString +
+                ' ' +
+                text);
+        }
     }
     handleBackoffTimer() {
         if (this.continueConnecting) {
@@ -16294,16 +16601,20 @@ class Subchannel {
         if (oldStates.indexOf(this.connectivityState) === -1) {
             return false;
         }
-        if (errorMessage) {
-            this.trace(connectivity_state_1.ConnectivityState[this.connectivityState] +
-                ' -> ' +
-                connectivity_state_1.ConnectivityState[newState] +
-                ' with error "' + errorMessage + '"');
-        }
-        else {
-            this.trace(connectivity_state_1.ConnectivityState[this.connectivityState] +
-                ' -> ' +
-                connectivity_state_1.ConnectivityState[newState]);
+        if (this.traceEnabled) {
+            if (errorMessage) {
+                this.trace(connectivity_state_1.ConnectivityState[this.connectivityState] +
+                    ' -> ' +
+                    connectivity_state_1.ConnectivityState[newState] +
+                    ' with error "' +
+                    errorMessage +
+                    '"');
+            }
+            else {
+                this.trace(connectivity_state_1.ConnectivityState[this.connectivityState] +
+                    ' -> ' +
+                    connectivity_state_1.ConnectivityState[newState]);
+            }
         }
         if (this.channelzEnabled) {
             this.channelzTrace.addTrace('CT_INFO', 'Connectivity state change to ' + connectivity_state_1.ConnectivityState[newState]);
@@ -16350,11 +16661,15 @@ class Subchannel {
         return true;
     }
     ref() {
-        this.refTrace('refcount ' + this.refcount + ' -> ' + (this.refcount + 1));
+        if (this.refTraceEnabled) {
+            this.refTrace('refcount ' + this.refcount + ' -> ' + (this.refcount + 1));
+        }
         this.refcount += 1;
     }
     unref() {
-        this.refTrace('refcount ' + this.refcount + ' -> ' + (this.refcount - 1));
+        if (this.refTraceEnabled) {
+            this.refTrace('refcount ' + this.refcount + ' -> ' + (this.refcount - 1));
+        }
         this.refcount -= 1;
         if (this.refcount === 0) {
             this.channelzTrace.addTrace('CT_INFO', 'Shutting down');
@@ -16372,7 +16687,7 @@ class Subchannel {
         }
         return false;
     }
-    createCall(metadata, host, method, listener) {
+    createCall(metadata, host, method, listener, callId) {
         if (!this.transport) {
             throw new Error('Cannot create call, subchannel not READY');
         }
@@ -16394,7 +16709,7 @@ class Subchannel {
         else {
             statsTracker = {};
         }
-        return this.transport.createCall(metadata, host, method, listener, statsTracker);
+        return this.transport.createCall(metadata, host, method, listener, statsTracker, callId);
     }
     /**
      * If the subchannel is currently IDLE, start connecting and switch to the
@@ -16663,21 +16978,27 @@ class Http2Transport {
                 opaqueData.equals(tooManyPingsData)) {
                 tooManyPings = true;
             }
-            this.trace('connection closed by GOAWAY with code ' +
-                errorCode +
-                ' and data ' +
-                (opaqueData === null || opaqueData === void 0 ? void 0 : opaqueData.toString()));
+            if (this.traceEnabled) {
+                this.trace('connection closed by GOAWAY with code ' +
+                    errorCode +
+                    ' and data ' +
+                    (opaqueData === null || opaqueData === void 0 ? void 0 : opaqueData.toString()));
+            }
             this.reportDisconnectToOwner(tooManyPings);
         });
         session.once('error', error => {
-            this.trace('connection closed with error ' + error.message);
+            if (this.traceEnabled) {
+                this.trace('connection closed with error ' + error.message);
+            }
             this.handleDisconnect();
         });
         session.socket.once('close', (hadError) => {
-            this.trace('connection closed. hadError=' + hadError);
+            if (this.traceEnabled) {
+                this.trace('connection closed. hadError=' + hadError);
+            }
             this.handleDisconnect();
         });
-        if (logging.isTracerEnabled(TRACER_NAME)) {
+        if (this.traceEnabled) {
             session.on('remoteSettings', (settings) => {
                 this.trace('new settings received' +
                     (this.session !== session ? ' on the old connection' : '') +
@@ -16696,7 +17017,7 @@ class Http2Transport {
         if (this.keepaliveWithoutCalls) {
             this.maybeStartKeepalivePingTimer();
         }
-        if (session.socket instanceof tls_1.TLSSocket) {
+        if (session.socket instanceof tls_1.TLSSocket && session.socket.authorized) {
             this.authContext = {
                 transportSecurityType: 'ssl',
                 sslPeerCertificate: session.socket.getPeerCertificate()
@@ -16753,37 +17074,57 @@ class Http2Transport {
         };
         return socketInfo;
     }
+    get traceEnabled() {
+        return logging.isTracerEnabled(TRACER_NAME);
+    }
+    get keepaliveTraceEnabled() {
+        return logging.isTracerEnabled('keepalive');
+    }
+    get flowControlTraceEnabled() {
+        return logging.isTracerEnabled(FLOW_CONTROL_TRACER_NAME);
+    }
+    get internalsTraceEnabled() {
+        return logging.isTracerEnabled('transport_internals');
+    }
     trace(text) {
-        logging.trace(constants_1.LogVerbosity.DEBUG, TRACER_NAME, '(' +
-            this.channelzRef.id +
-            ') ' +
-            this.subchannelAddressString +
-            ' ' +
-            text);
+        if (this.traceEnabled) {
+            logging.trace(constants_1.LogVerbosity.DEBUG, TRACER_NAME, '(' +
+                this.channelzRef.id +
+                ') ' +
+                this.subchannelAddressString +
+                ' ' +
+                text);
+        }
     }
     keepaliveTrace(text) {
-        logging.trace(constants_1.LogVerbosity.DEBUG, 'keepalive', '(' +
-            this.channelzRef.id +
-            ') ' +
-            this.subchannelAddressString +
-            ' ' +
-            text);
+        if (this.keepaliveTraceEnabled) {
+            logging.trace(constants_1.LogVerbosity.DEBUG, 'keepalive', '(' +
+                this.channelzRef.id +
+                ') ' +
+                this.subchannelAddressString +
+                ' ' +
+                text);
+        }
     }
     flowControlTrace(text) {
-        logging.trace(constants_1.LogVerbosity.DEBUG, FLOW_CONTROL_TRACER_NAME, '(' +
-            this.channelzRef.id +
-            ') ' +
-            this.subchannelAddressString +
-            ' ' +
-            text);
+        if (this.flowControlTraceEnabled) {
+            logging.trace(constants_1.LogVerbosity.DEBUG, FLOW_CONTROL_TRACER_NAME, '(' +
+                this.channelzRef.id +
+                ') ' +
+                this.subchannelAddressString +
+                ' ' +
+                text);
+        }
     }
     internalsTrace(text) {
-        logging.trace(constants_1.LogVerbosity.DEBUG, 'transport_internals', '(' +
-            this.channelzRef.id +
-            ') ' +
-            this.subchannelAddressString +
-            ' ' +
-            text);
+        if (this.internalsTraceEnabled) {
+            logging.trace(constants_1.LogVerbosity.DEBUG, 'transport_internals', '(' +
+                this.channelzRef.id +
+                ') ' +
+                this.subchannelAddressString +
+                ' ' +
+                text);
+        }
     }
     /**
      * Indicate to the owner of this object that this transport should no longer
@@ -16836,7 +17177,9 @@ class Http2Transport {
         if (this.channelzEnabled) {
             this.keepalivesSent += 1;
         }
-        this.keepaliveTrace('Sending ping with timeout ' + this.keepaliveTimeoutMs + 'ms');
+        if (this.keepaliveTraceEnabled) {
+            this.keepaliveTrace('Sending ping with timeout ' + this.keepaliveTimeoutMs + 'ms');
+        }
         this.keepaliveTimer = setTimeout(() => {
             this.keepaliveTimer = null;
             this.keepaliveTrace('Ping timeout passed without response');
@@ -16848,7 +17191,9 @@ class Http2Transport {
             const pingSentSuccessfully = this.session.ping((err, duration, payload) => {
                 this.clearKeepaliveTimeout();
                 if (err) {
-                    this.keepaliveTrace('Ping failed with error ' + err.message);
+                    if (this.keepaliveTraceEnabled) {
+                        this.keepaliveTrace('Ping failed with error ' + err.message);
+                    }
                     this.handleDisconnect();
                 }
                 else {
@@ -16865,7 +17210,9 @@ class Http2Transport {
             pingSendError = (e instanceof Error ? e.message : '') || 'Unknown error';
         }
         if (pingSendError) {
-            this.keepaliveTrace('Ping send failed: ' + pingSendError);
+            if (this.keepaliveTraceEnabled) {
+                this.keepaliveTrace('Ping send failed: ' + pingSendError);
+            }
             this.handleDisconnect();
         }
     }
@@ -16919,7 +17266,7 @@ class Http2Transport {
             }
         }
     }
-    createCall(metadata, host, method, listener, subchannelCallStatsTracker) {
+    createCall(metadata, host, method, listener, subchannelCallStatsTracker, callId) {
         const headers = metadata.toHttp2Headers();
         headers[HTTP2_HEADER_AUTHORITY] = host;
         headers[HTTP2_HEADER_USER_AGENT] = this.userAgent;
@@ -16943,16 +17290,20 @@ class Http2Transport {
             this.handleDisconnect();
             throw e;
         }
-        this.flowControlTrace('local window size: ' +
-            this.session.state.localWindowSize +
-            ' remote window size: ' +
-            this.session.state.remoteWindowSize);
-        this.internalsTrace('session.closed=' +
-            this.session.closed +
-            ' session.destroyed=' +
-            this.session.destroyed +
-            ' session.socket.destroyed=' +
-            this.session.socket.destroyed);
+        if (this.flowControlTraceEnabled) {
+            this.flowControlTrace('local window size: ' +
+                this.session.state.localWindowSize +
+                ' remote window size: ' +
+                this.session.state.remoteWindowSize);
+        }
+        if (this.internalsTraceEnabled) {
+            this.internalsTrace('session.closed=' +
+                this.session.closed +
+                ' session.destroyed=' +
+                this.session.destroyed +
+                ' session.socket.destroyed=' +
+                this.session.socket.destroyed);
+        }
         let eventTracker;
         // eslint-disable-next-line prefer-const
         let call;
@@ -16962,13 +17313,13 @@ class Http2Transport {
                 addMessageSent: () => {
                     var _a;
                     this.messagesSent += 1;
-                    this.lastMessageSentTimestamp = new Date();
+                    this.lastMessageSentTimestamp = Date.now();
                     (_a = subchannelCallStatsTracker.addMessageSent) === null || _a === void 0 ? void 0 : _a.call(subchannelCallStatsTracker);
                 },
                 addMessageReceived: () => {
                     var _a;
                     this.messagesReceived += 1;
-                    this.lastMessageReceivedTimestamp = new Date();
+                    this.lastMessageReceivedTimestamp = Date.now();
                     (_a = subchannelCallStatsTracker.addMessageReceived) === null || _a === void 0 ? void 0 : _a.call(subchannelCallStatsTracker);
                 },
                 onCallEnd: status => {
@@ -17009,7 +17360,7 @@ class Http2Transport {
                 },
             };
         }
-        call = new subchannel_call_1.Http2SubchannelCall(http2Stream, eventTracker, listener, this, (0, call_number_1.getNextCallNumber)());
+        call = new subchannel_call_1.Http2SubchannelCall(http2Stream, eventTracker, listener, this, callId !== null && callId !== void 0 ? callId : (0, call_number_1.getNextCallNumber)());
         this.addActiveCall(call);
         return call;
     }
@@ -17036,8 +17387,13 @@ class Http2SubchannelConnector {
         this.session = null;
         this.isShutdown = false;
     }
+    get traceEnabled() {
+        return logging.isTracerEnabled(TRACER_NAME);
+    }
     trace(text) {
-        logging.trace(constants_1.LogVerbosity.DEBUG, TRACER_NAME, (0, uri_parser_1.uriToString)(this.channelTarget) + ' ' + text);
+        if (this.traceEnabled) {
+            logging.trace(constants_1.LogVerbosity.DEBUG, TRACER_NAME, (0, uri_parser_1.uriToString)(this.channelTarget) + ' ' + text);
+        }
     }
     createSession(secureConnectResult, address, options) {
         if (this.isShutdown) {
@@ -17075,7 +17431,9 @@ class Http2SubchannelConnector {
                 var _a;
                 (_a = this.session) === null || _a === void 0 ? void 0 : _a.destroy();
                 errorMessage = error.message;
-                this.trace('connection failed with error ' + errorMessage);
+                if (this.traceEnabled) {
+                    this.trace('connection failed with error ' + errorMessage);
+                }
                 if (!reportedError) {
                     reportedError = true;
                     reject(`${errorMessage} (${new Date().toISOString()})`);
@@ -17162,14 +17520,22 @@ class Http2SubchannelConnector {
         let secureConnectResult = null;
         const addressString = (0, subchannel_address_1.subchannelAddressToString)(address);
         try {
-            this.trace(addressString + ' Waiting for secureConnector to be ready');
+            if (this.traceEnabled) {
+                this.trace(addressString + ' Waiting for secureConnector to be ready');
+            }
             await secureConnector.waitForReady();
-            this.trace(addressString + ' secureConnector is ready');
+            if (this.traceEnabled) {
+                this.trace(addressString + ' secureConnector is ready');
+            }
             tcpConnection = await this.tcpConnect(address, options);
             tcpConnection.setNoDelay();
-            this.trace(addressString + ' Established TCP connection');
+            if (this.traceEnabled) {
+                this.trace(addressString + ' Established TCP connection');
+            }
             secureConnectResult = await secureConnector.connect(tcpConnection);
-            this.trace(addressString + ' Established secure connection');
+            if (this.traceEnabled) {
+                this.trace(addressString + ' Established secure connection');
+            }
             return this.createSession(secureConnectResult, address, options);
         }
         catch (e) {
@@ -17216,6 +17582,8 @@ exports.parseUri = parseUri;
 exports.splitHostPort = splitHostPort;
 exports.combineHostPort = combineHostPort;
 exports.uriToString = uriToString;
+exports.extractServiceName = extractServiceName;
+exports.computeServiceUrl = computeServiceUrl;
 /*
  * The groups correspond to URI parts as follows:
  * 1. scheme
@@ -17317,6 +17685,31 @@ function uriToString(uri) {
     }
     result += uri.path;
     return result;
+}
+/**
+ * Extracts the service name from a gRPC method path (e.g.
+ * "/package.Service/Method" -> "package.Service").
+ */
+function extractServiceName(methodName) {
+    const firstSlashIndex = methodName.indexOf('/');
+    if (firstSlashIndex === -1) {
+        return '';
+    }
+    const secondSlashIndex = methodName.indexOf('/', firstSlashIndex + 1);
+    if (secondSlashIndex === -1) {
+        return methodName.substring(firstSlashIndex + 1);
+    }
+    return methodName.substring(firstSlashIndex + 1, secondSlashIndex);
+}
+/**
+ * Computes the service URL used by call credentials (e.g.
+ * "https://hostname/serviceName").
+ */
+function computeServiceUrl(host, methodName) {
+    var _a, _b;
+    const serviceName = extractServiceName(methodName);
+    const hostname = (_b = (_a = splitHostPort(host)) === null || _a === void 0 ? void 0 : _a.host) !== null && _b !== void 0 ? _b : 'localhost';
+    return `https://${hostname}/${serviceName}`;
 }
 //# sourceMappingURL=uri-parser.js.map
 
@@ -56256,19 +56649,28 @@ function captureSegment (state, start, end, checkJson) {
   }
 }
 
+function chargeMergeWork (state) {
+  state.totalMergeKeys++
+
+  if (state.maxTotalMergeKeys !== -1 && state.totalMergeKeys > state.maxTotalMergeKeys) {
+    throwError(state, 'merge keys exceeded maxTotalMergeKeys (' + state.maxTotalMergeKeys + ')')
+  }
+}
+
 function mergeMappings (state, destination, source, overridableKeys) {
   if (!common.isObject(source)) {
     throwError(state, 'cannot merge mappings; the provided source object is unacceptable')
   }
+
+  // Count the source mapping itself to bound sequences of empty mappings.
+  chargeMergeWork(state)
 
   const sourceKeys = Object.keys(source)
 
   for (let index = 0, quantity = sourceKeys.length; index < quantity; index += 1) {
     const key = sourceKeys[index]
 
-    if (state.maxTotalMergeKeys !== -1 && ++state.totalMergeKeys > state.maxTotalMergeKeys) {
-      throwError(state, 'merge keys exceeded maxTotalMergeKeys (' + state.maxTotalMergeKeys + ')')
-    }
+    chargeMergeWork(state)
 
     if (!_hasOwnProperty.call(destination, key)) {
       setProperty(destination, key, source[key])
@@ -56311,6 +56713,10 @@ function storeMappingPair (state, _result, overridableKeys, keyTag, keyNode, val
 
   if (keyTag === 'tag:yaml.org,2002:merge') {
     if (Array.isArray(valueNode)) {
+      if (valueNode.length > 100) {
+        throwError(state, 'abnormal merge sequence size')
+      }
+
       for (let index = 0, quantity = valueNode.length; index < quantity; index += 1) {
         mergeMappings(state, _result, valueNode[index], overridableKeys)
       }
@@ -58587,7 +58993,7 @@ const _toString = Object.prototype.toString
 function resolveYamlOmap (data) {
   if (data === null) return true
 
-  const objectKeys = []
+  const objectKeys = {}
   const object = data
 
   for (let index = 0, length = object.length; index < length; index += 1) {
@@ -58606,8 +59012,8 @@ function resolveYamlOmap (data) {
 
     if (!pairHasKey) return false
 
-    if (objectKeys.indexOf(pairKey) === -1) objectKeys.push(pairKey)
-    else return false
+    if (_hasOwnProperty.call(objectKeys, pairKey)) return false
+    Object.defineProperty(objectKeys, pairKey, { value: true })
   }
 
   return true
@@ -264486,7 +264892,9 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Agent = void 0;
+const net = __importStar(__nccwpck_require__(69278));
 const http = __importStar(__nccwpck_require__(58611));
+const https_1 = __nccwpck_require__(65692);
 __exportStar(__nccwpck_require__(15183), exports);
 const INTERNAL = Symbol('AgentBaseInternalState');
 class Agent extends http.Agent {
@@ -264523,22 +264931,86 @@ class Agent extends http.Agent {
             .some((l) => l.indexOf('(https.js:') !== -1 ||
             l.indexOf('node:https:') !== -1);
     }
+    // In order to support async signatures in `connect()` and Node's native
+    // connection pooling in `http.Agent`, the array of sockets for each origin
+    // has to be updated synchronously. This is so the length of the array is
+    // accurate when `addRequest()` is next called. We achieve this by creating a
+    // fake socket and adding it to `sockets[origin]` and incrementing
+    // `totalSocketCount`.
+    incrementSockets(name) {
+        // If `maxSockets` and `maxTotalSockets` are both Infinity then there is no
+        // need to create a fake socket because Node.js native connection pooling
+        // will never be invoked.
+        if (this.maxSockets === Infinity && this.maxTotalSockets === Infinity) {
+            return null;
+        }
+        // All instances of `sockets` are expected TypeScript errors. The
+        // alternative is to add it as a private property of this class but that
+        // will break TypeScript subclassing.
+        if (!this.sockets[name]) {
+            // @ts-expect-error `sockets` is readonly in `@types/node`
+            this.sockets[name] = [];
+        }
+        const fakeSocket = new net.Socket({ writable: false });
+        this.sockets[name].push(fakeSocket);
+        // @ts-expect-error `totalSocketCount` isn't defined in `@types/node`
+        this.totalSocketCount++;
+        return fakeSocket;
+    }
+    decrementSockets(name, socket) {
+        if (!this.sockets[name] || socket === null) {
+            return;
+        }
+        const sockets = this.sockets[name];
+        const index = sockets.indexOf(socket);
+        if (index !== -1) {
+            sockets.splice(index, 1);
+            // @ts-expect-error  `totalSocketCount` isn't defined in `@types/node`
+            this.totalSocketCount--;
+            if (sockets.length === 0) {
+                // @ts-expect-error `sockets` is readonly in `@types/node`
+                delete this.sockets[name];
+            }
+        }
+    }
+    // In order to properly update the socket pool, we need to call `getName()` on
+    // the core `https.Agent` if it is a secureEndpoint.
+    getName(options) {
+        const secureEndpoint = this.isSecureEndpoint(options);
+        if (secureEndpoint) {
+            // @ts-expect-error `getName()` isn't defined in `@types/node`
+            return https_1.Agent.prototype.getName.call(this, options);
+        }
+        // @ts-expect-error `getName()` isn't defined in `@types/node`
+        return super.getName(options);
+    }
     createSocket(req, options, cb) {
         const connectOpts = {
             ...options,
             secureEndpoint: this.isSecureEndpoint(options),
         };
+        const name = this.getName(connectOpts);
+        const fakeSocket = this.incrementSockets(name);
         Promise.resolve()
             .then(() => this.connect(req, connectOpts))
             .then((socket) => {
+            this.decrementSockets(name, fakeSocket);
             if (socket instanceof http.Agent) {
-                // @ts-expect-error `addRequest()` isn't defined in `@types/node`
-                return socket.addRequest(req, connectOpts);
+                try {
+                    // @ts-expect-error `addRequest()` isn't defined in `@types/node`
+                    return socket.addRequest(req, connectOpts);
+                }
+                catch (err) {
+                    return cb(err);
+                }
             }
             this[INTERNAL].currentSocket = socket;
             // @ts-expect-error `createSocket()` isn't defined in `@types/node`
             super.createSocket(req, options, cb);
-        }, cb);
+        }, (err) => {
+            this.decrementSockets(name, fakeSocket);
+            cb(err);
+        });
     }
     createConnection() {
         const socket = this[INTERNAL].currentSocket;
@@ -277108,7 +277580,24 @@ module.exports = (giturl, protocols) => {
 
 "use strict";
 
-// rfc7231 6.1
+
+/**
+ * @typedef {Object} HttpRequest
+ * @property {Record<string, string>} headers - Request headers
+ * @property {string} [method] - HTTP method
+ * @property {string} [url] - Request URL
+ */
+
+/**
+ * @typedef {Object} HttpResponse
+ * @property {Record<string, string>} headers - Response headers
+ * @property {number} [status] - HTTP status code
+ */
+
+/**
+ * Set of default cacheable status codes per RFC 7231 section 6.1.
+ * @type {Set<number>}
+ */
 const statusCodeCacheableByDefault = new Set([
     200,
     203,
@@ -277124,7 +277613,11 @@ const statusCodeCacheableByDefault = new Set([
     501,
 ]);
 
-// This implementation does not understand partial responses (206)
+/**
+ * Set of HTTP status codes that the cache implementation understands.
+ * Note: This implementation does not understand partial responses (206).
+ * @type {Set<number>}
+ */
 const understoodStatuses = new Set([
     200,
     203,
@@ -277142,13 +277635,21 @@ const understoodStatuses = new Set([
     501,
 ]);
 
+/**
+ * Set of HTTP error status codes.
+ * @type {Set<number>}
+ */
 const errorStatusCodes = new Set([
     500,
     502,
-    503, 
+    503,
     504,
 ]);
 
+/**
+ * Object representing hop-by-hop headers that should be removed.
+ * @type {Record<string, boolean>}
+ */
 const hopByHopHeaders = {
     date: true, // included, because we add Age update Date
     connection: true,
@@ -277161,6 +277662,10 @@ const hopByHopHeaders = {
     upgrade: true,
 };
 
+/**
+ * Headers that are excluded from revalidation update.
+ * @type {Record<string, boolean>}
+ */
 const excludedFromRevalidationUpdate = {
     // Since the old body is reused, it doesn't make sense to change properties of the body
     'content-length': true,
@@ -277169,21 +277674,37 @@ const excludedFromRevalidationUpdate = {
     'content-range': true,
 };
 
+/**
+ * Converts a string to a number or returns zero if the conversion fails.
+ * @param {string} s - The string to convert.
+ * @returns {number} The parsed number or 0.
+ */
 function toNumberOrZero(s) {
     const n = parseInt(s, 10);
     return isFinite(n) ? n : 0;
 }
 
-// RFC 5861
+/**
+ * Determines if the given response is an error response.
+ * Implements RFC 5861 behavior.
+ * @param {HttpResponse|undefined} response - The HTTP response object.
+ * @returns {boolean} true if the response is an error or undefined, false otherwise.
+ */
 function isErrorResponse(response) {
     // consider undefined response as faulty
-    if(!response) {
-        return true
+    if (!response) {
+        return true;
     }
     return errorStatusCodes.has(response.status);
 }
 
+/**
+ * Parses a Cache-Control header string into an object.
+ * @param {string} [header] - The Cache-Control header value.
+ * @returns {Record<string, string|boolean>} An object representing Cache-Control directives.
+ */
 function parseCacheControl(header) {
+    /** @type {Record<string, string|boolean>} */
     const cc = {};
     if (!header) return cc;
 
@@ -277198,6 +277719,11 @@ function parseCacheControl(header) {
     return cc;
 }
 
+/**
+ * Formats a Cache-Control directives object into a header string.
+ * @param {Record<string, string|boolean>} cc - The Cache-Control directives.
+ * @returns {string|undefined} A formatted Cache-Control header string or undefined if empty.
+ */
 function formatCacheControl(cc) {
     let parts = [];
     for (const k in cc) {
@@ -277211,6 +277737,17 @@ function formatCacheControl(cc) {
 }
 
 module.exports = class CachePolicy {
+    /**
+     * Creates a new CachePolicy instance.
+     * @param {HttpRequest} req - Incoming client request.
+     * @param {HttpResponse} res - Received server response.
+     * @param {Object} [options={}] - Configuration options.
+     * @param {boolean} [options.shared=true] - Is the cache shared (a public proxy)? `false` for personal browser caches.
+     * @param {number} [options.cacheHeuristic=0.1] - Fallback heuristic (age fraction) for cache duration.
+     * @param {number} [options.immutableMinTimeToLive=86400000] - Minimum TTL for immutable responses in milliseconds.
+     * @param {boolean} [options.ignoreCargoCult=false] - Detect nonsense cache headers, and override them.
+     * @param {any} [options._fromObject] - Internal parameter for deserialization. Do not use.
+     */
     constructor(
         req,
         res,
@@ -277232,29 +277769,44 @@ module.exports = class CachePolicy {
         }
         this._assertRequestHasHeaders(req);
 
+        /** @type {number} Timestamp when the response was received */
         this._responseTime = this.now();
+        /** @type {boolean} Indicates if the cache is shared */
         this._isShared = shared !== false;
+        /** @type {boolean} Indicates if legacy cargo cult directives should be ignored */
+        this._ignoreCargoCult = !!ignoreCargoCult;
+        /** @type {number} Heuristic cache fraction */
         this._cacheHeuristic =
             undefined !== cacheHeuristic ? cacheHeuristic : 0.1; // 10% matches IE
+        /** @type {number} Minimum TTL for immutable responses in ms */
         this._immutableMinTtl =
             undefined !== immutableMinTimeToLive
                 ? immutableMinTimeToLive
                 : 24 * 3600 * 1000;
 
+        /** @type {number} HTTP status code */
         this._status = 'status' in res ? res.status : 200;
+        /** @type {Record<string, string>} Response headers */
         this._resHeaders = res.headers;
+        /** @type {Record<string, string|boolean>} Parsed Cache-Control directives from response */
         this._rescc = parseCacheControl(res.headers['cache-control']);
+        /** @type {string} HTTP method (e.g., GET, POST) */
         this._method = 'method' in req ? req.method : 'GET';
+        /** @type {string} Request URL */
         this._url = req.url;
+        /** @type {string} Host header from the request */
         this._host = req.headers.host;
+        /** @type {boolean} Whether the request does not include an Authorization header */
         this._noAuthorization = !req.headers.authorization;
+        /** @type {Record<string, string>|null} Request headers used for Vary matching */
         this._reqHeaders = res.headers.vary ? req.headers : null; // Don't keep all request headers if they won't be used
+        /** @type {Record<string, string|boolean>} Parsed Cache-Control directives from request */
         this._reqcc = parseCacheControl(req.headers['cache-control']);
 
         // Assume that if someone uses legacy, non-standard uncecessary options they don't understand caching,
         // so there's no point stricly adhering to the blindly copy&pasted directives.
         if (
-            ignoreCargoCult &&
+            this._ignoreCargoCult &&
             'pre-check' in this._rescc &&
             'post-check' in this._rescc
         ) {
@@ -277280,10 +277832,18 @@ module.exports = class CachePolicy {
         }
     }
 
+    /**
+     * You can monkey-patch it for testing.
+     * @returns {number} Current time in milliseconds.
+     */
     now() {
         return Date.now();
     }
 
+    /**
+     * Determines if the response is storable in a cache.
+     * @returns {boolean} `false` if can never be cached.
+     */
     storable() {
         // The "no-store" request directive indicates that a cache MUST NOT store any part of either this request or any response to it.
         return !!(
@@ -277317,62 +277877,161 @@ module.exports = class CachePolicy {
         );
     }
 
+    /**
+     * @returns {boolean} true if expiration is explicitly defined.
+     */
     _hasExplicitExpiration() {
         // 4.2.1 Calculating Freshness Lifetime
-        return (
+        return !!(
             (this._isShared && this._rescc['s-maxage']) ||
             this._rescc['max-age'] ||
             this._resHeaders.expires
         );
     }
 
+    /**
+     * @param {HttpRequest} req - a request
+     * @throws {Error} if the headers are missing.
+     */
     _assertRequestHasHeaders(req) {
         if (!req || !req.headers) {
             throw Error('Request headers missing');
         }
     }
 
+    /**
+     * Checks if the request matches the cache and can be satisfied from the cache immediately,
+     * without having to make a request to the server.
+     *
+     * This doesn't support `stale-while-revalidate`. See `evaluateRequest()` for a more complete solution.
+     *
+     * @param {HttpRequest} req - The new incoming HTTP request.
+     * @returns {boolean} `true`` if the cached response used to construct this cache policy satisfies the request without revalidation.
+     */
     satisfiesWithoutRevalidation(req) {
+        const result = this.evaluateRequest(req);
+        return !result.revalidation;
+    }
+
+    /**
+     * @param {{headers: Record<string, string>, synchronous: boolean}|undefined} revalidation - Revalidation information, if any.
+     * @returns {{response: HttpResponse, revalidation: {headers: Record<string, string>, synchronous: boolean}|undefined}} An object with a cached response headers and revalidation info.
+     */
+    _evaluateRequestHitResult(revalidation) {
+        return {
+            response: {
+                headers: this.responseHeaders(),
+                status: this._status,
+            },
+            revalidation,
+        };
+    }
+
+    /**
+     * @param {HttpRequest} request - new incoming
+     * @param {boolean} synchronous - whether revalidation must be synchronous (not s-w-r).
+     * @returns {{headers: Record<string, string>, synchronous: boolean}} An object with revalidation headers and a synchronous flag.
+     */
+    _evaluateRequestRevalidation(request, synchronous) {
+        return {
+            synchronous,
+            headers: this.revalidationHeaders(request),
+        };
+    }
+
+    /**
+     * @param {HttpRequest} request - new incoming
+     * @returns {{response: undefined, revalidation: {headers: Record<string, string>, synchronous: boolean}}} An object indicating no cached response and revalidation details.
+     */
+    _evaluateRequestMissResult(request) {
+        return {
+            response: undefined,
+            revalidation: this._evaluateRequestRevalidation(request, true),
+        };
+    }
+
+    /**
+     * Checks if the given request matches this cache entry, and how the cache can be used to satisfy it. Returns an object with:
+     *
+     * ```
+     * {
+     *     // If defined, you must send a request to the server.
+     *     revalidation: {
+     *         headers: {}, // HTTP headers to use when sending the revalidation response
+     *         // If true, you MUST wait for a response from the server before using the cache
+     *         // If false, this is stale-while-revalidate. The cache is stale, but you can use it while you update it asynchronously.
+     *         synchronous: bool,
+     *     },
+     *     // If defined, you can use this cached response.
+     *     response: {
+     *         headers: {}, // Updated cached HTTP headers you must use when responding to the client
+     *     },
+     * }
+     * ```
+     * @param {HttpRequest} req - new incoming HTTP request
+     * @returns {{response: HttpResponse|undefined, revalidation: {headers: Record<string, string>, synchronous: boolean}|undefined}} An object containing keys:
+     *   - revalidation: { headers: Record<string, string>, synchronous: boolean } Set if you should send this to the origin server
+     *   - response: HttpResponse Set if you can respond to the client with these cached headers
+     */
+    evaluateRequest(req) {
         this._assertRequestHasHeaders(req);
+
+        // In all circumstances, a cache MUST NOT ignore the must-revalidate directive
+        if (this._rescc['must-revalidate']) {
+            return this._evaluateRequestMissResult(req);
+        }
+
+        if (!this._requestMatches(req, false)) {
+            return this._evaluateRequestMissResult(req);
+        }
 
         // When presented with a request, a cache MUST NOT reuse a stored response, unless:
         // the presented request does not contain the no-cache pragma (Section 5.4), nor the no-cache cache directive,
         // unless the stored response is successfully validated (Section 4.3), and
         const requestCC = parseCacheControl(req.headers['cache-control']);
+
         if (requestCC['no-cache'] || /no-cache/.test(req.headers.pragma)) {
-            return false;
+            return this._evaluateRequestMissResult(req);
         }
 
-        if (requestCC['max-age'] && this.age() > requestCC['max-age']) {
-            return false;
+        if (requestCC['max-age'] && this.age() > toNumberOrZero(requestCC['max-age'])) {
+            return this._evaluateRequestMissResult(req);
         }
 
-        if (
-            requestCC['min-fresh'] &&
-            this.timeToLive() < 1000 * requestCC['min-fresh']
-        ) {
-            return false;
+        if (requestCC['min-fresh'] && this.maxAge() - this.age() < toNumberOrZero(requestCC['min-fresh'])) {
+            return this._evaluateRequestMissResult(req);
         }
 
         // the stored response is either:
         // fresh, or allowed to be served stale
         if (this.stale()) {
-            const allowsStale =
-                requestCC['max-stale'] &&
-                !this._rescc['must-revalidate'] &&
-                (true === requestCC['max-stale'] ||
-                    requestCC['max-stale'] > this.age() - this.maxAge());
-            if (!allowsStale) {
-                return false;
+            // If a value is present, then the client is willing to accept a response that has
+            // exceeded its freshness lifetime by no more than the specified number of seconds
+            const allowsStaleWithoutRevalidation = 'max-stale' in requestCC &&
+                (true === requestCC['max-stale'] || requestCC['max-stale'] > this.age() - this.maxAge());
+
+            if (allowsStaleWithoutRevalidation) {
+                return this._evaluateRequestHitResult(undefined);
             }
+
+            if (this.useStaleWhileRevalidate()) {
+                return this._evaluateRequestHitResult(this._evaluateRequestRevalidation(req, false));
+            }
+
+            return this._evaluateRequestMissResult(req);
         }
 
-        return this._requestMatches(req, false);
+        return this._evaluateRequestHitResult(undefined);
     }
 
+    /**
+     * @param {HttpRequest} req - check if this is for the same cache entry
+     * @param {boolean} allowHeadMethod - allow a HEAD method to match.
+     * @returns {boolean} `true` if the request matches.
+     */
     _requestMatches(req, allowHeadMethod) {
         // The presented effective request URI and that of the stored response match, and
-        return (
+        return !!(
             (!this._url || this._url === req.url) &&
             this._host === req.headers.host &&
             // the request method associated with the stored response allows it to be used for the presented request, and
@@ -277384,36 +278043,65 @@ module.exports = class CachePolicy {
         );
     }
 
+    /**
+     * Determines whether storing authenticated responses is allowed.
+     * @returns {boolean} `true` if allowed.
+     */
     _allowsStoringAuthenticated() {
-        //  following Cache-Control response directives (Section 5.2.2) have such an effect: must-revalidate, public, and s-maxage.
-        return (
+        // following Cache-Control response directives (Section 5.2.2) have such an effect: must-revalidate, public, and s-maxage.
+        return !!(
             this._rescc['must-revalidate'] ||
             this._rescc.public ||
             this._rescc['s-maxage']
         );
     }
 
+    /**
+     * Checks whether the Vary header in the response matches the new request.
+     * @param {HttpRequest} req - incoming HTTP request
+     * @returns {boolean} `true` if the vary headers match.
+     */
     _varyMatches(req) {
         if (!this._resHeaders.vary) {
             return true;
-        }
-
-        // A Vary header field-value of "*" always fails to match
-        if (this._resHeaders.vary === '*') {
-            return false;
         }
 
         const fields = this._resHeaders.vary
             .trim()
             .toLowerCase()
             .split(/\s*,\s*/);
+
         for (const name of fields) {
-            if (req.headers[name] !== this._reqHeaders[name]) return false;
+            // A Vary header field-value of "*" always fails to match
+            if (name === '*') {
+                return false;
+            }
+
+            const newReq = Object.prototype.hasOwnProperty.call(
+                req.headers,
+                name
+            ) && req.headers[name];
+
+            const cachedReq = Object.prototype.hasOwnProperty.call(
+                this._reqHeaders,
+                name
+            ) && this._reqHeaders[name];
+
+            if (newReq !== cachedReq) {
+                return false;
+            }
         }
+
         return true;
     }
 
+    /**
+     * Creates a copy of the given headers without any hop-by-hop headers.
+     * @param {Record<string, string>} inHeaders - old headers from the cached response
+     * @returns {Record<string, string>} A new headers object without hop-by-hop headers.
+     */
     _copyWithoutHopByHopHeaders(inHeaders) {
+        /** @type {Record<string, string>} */
         const headers = {};
         for (const name in inHeaders) {
             if (hopByHopHeaders[name]) continue;
@@ -277439,6 +278127,11 @@ module.exports = class CachePolicy {
         return headers;
     }
 
+    /**
+     * Returns the response headers adjusted for serving the cached response.
+     * Removes hop-by-hop headers and updates the Age and Date headers.
+     * @returns {Record<string, string>} The adjusted response headers.
+     */
     responseHeaders() {
         const headers = this._copyWithoutHopByHopHeaders(this._resHeaders);
         const age = this.age();
@@ -277460,8 +278153,16 @@ module.exports = class CachePolicy {
     }
 
     /**
-     * Value of the Date response header or current time if Date was invalid
-     * @return timestamp
+     * Returns the status code of the cached response.
+     * @returns {number} The response status code.
+     */
+    status() {
+      return this._status;
+    }
+
+    /**
+     * Returns the Date header value from the response or the current time if invalid.
+     * @returns {number} Timestamp (in milliseconds) representing the Date header or response time.
      */
     date() {
         const serverDate = Date.parse(this._resHeaders.date);
@@ -277474,8 +278175,7 @@ module.exports = class CachePolicy {
     /**
      * Value of the Age header, in seconds, updated for the current time.
      * May be fractional.
-     *
-     * @return Number
+     * @returns {number} The age in seconds.
      */
     age() {
         let age = this._ageValue();
@@ -277484,16 +278184,21 @@ module.exports = class CachePolicy {
         return age + residentTime;
     }
 
+    /**
+     * @returns {number} The Age header value as a number.
+     */
     _ageValue() {
         return toNumberOrZero(this._resHeaders.age);
     }
 
     /**
-     * Value of applicable max-age (or heuristic equivalent) in seconds. This counts since response's `Date`.
+     * Possibly outdated value of applicable max-age (or heuristic equivalent) in seconds.
+     * This counts since response's `Date`.
      *
      * For an up-to-date value, see `timeToLive()`.
      *
-     * @return Number
+     * Returns the maximum age (freshness lifetime) of the response in seconds.
+     * @returns {number} The max-age value in seconds.
      */
     maxAge() {
         if (!this.storable() || this._rescc['no-cache']) {
@@ -277555,29 +278260,57 @@ module.exports = class CachePolicy {
         return defaultMinTtl;
     }
 
+    /**
+     * Remaining time this cache entry may be useful for, in *milliseconds*.
+     * You can use this as an expiration time for your cache storage.
+     *
+     * Prefer this method over `maxAge()`, because it includes other factors like `age` and `stale-while-revalidate`.
+     * @returns {number} Time-to-live in milliseconds.
+     */
     timeToLive() {
         const age = this.maxAge() - this.age();
         const staleIfErrorAge = age + toNumberOrZero(this._rescc['stale-if-error']);
         const staleWhileRevalidateAge = age + toNumberOrZero(this._rescc['stale-while-revalidate']);
-        return Math.max(0, age, staleIfErrorAge, staleWhileRevalidateAge) * 1000;
+        return Math.round(Math.max(0, age, staleIfErrorAge, staleWhileRevalidateAge) * 1000);
     }
 
+    /**
+     * If true, this cache entry is past its expiration date.
+     * Note that stale cache may be useful sometimes, see `evaluateRequest()`.
+     * @returns {boolean} `false` doesn't mean it's fresh nor usable
+     */
     stale() {
         return this.maxAge() <= this.age();
     }
 
+    /**
+     * @returns {boolean} `true` if `stale-if-error` condition allows use of a stale response.
+     */
     _useStaleIfError() {
         return this.maxAge() + toNumberOrZero(this._rescc['stale-if-error']) > this.age();
     }
 
+    /** See `evaluateRequest()` for a more complete solution
+     * @returns {boolean} `true` if `stale-while-revalidate` is currently allowed.
+     */
     useStaleWhileRevalidate() {
-        return this.maxAge() + toNumberOrZero(this._rescc['stale-while-revalidate']) > this.age();
+        const swr = toNumberOrZero(this._rescc['stale-while-revalidate']);
+        return swr > 0 && this.maxAge() + swr > this.age();
     }
 
+    /**
+     * Creates a `CachePolicy` instance from a serialized object.
+     * @param {Object} obj - The serialized object.
+     * @returns {CachePolicy} A new CachePolicy instance.
+     */
     static fromObject(obj) {
         return new this(undefined, undefined, { _fromObject: obj });
     }
 
+    /**
+     * @param {any} obj - The serialized object.
+     * @throws {Error} If already initialized or if the object is invalid.
+     */
     _fromObject(obj) {
         if (this._responseTime) throw Error('Reinitialized');
         if (!obj || obj.v !== 1) throw Error('Invalid serialization');
@@ -277587,6 +278320,7 @@ module.exports = class CachePolicy {
         this._cacheHeuristic = obj.ch;
         this._immutableMinTtl =
             obj.imm !== undefined ? obj.imm : 24 * 3600 * 1000;
+        this._ignoreCargoCult = !!obj.icc;
         this._status = obj.st;
         this._resHeaders = obj.resh;
         this._rescc = obj.rescc;
@@ -277598,6 +278332,10 @@ module.exports = class CachePolicy {
         this._reqcc = obj.reqcc;
     }
 
+    /**
+     * Serializes the `CachePolicy` instance into a JSON-serializable object.
+     * @returns {Object} The serialized object.
+     */
     toObject() {
         return {
             v: 1,
@@ -277605,6 +278343,7 @@ module.exports = class CachePolicy {
             sh: this._isShared,
             ch: this._cacheHeuristic,
             imm: this._immutableMinTtl,
+            icc: this._ignoreCargoCult,
             st: this._status,
             resh: this._resHeaders,
             rescc: this._rescc,
@@ -277623,6 +278362,8 @@ module.exports = class CachePolicy {
      *
      * Hop by hop headers are always stripped.
      * Revalidation headers may be added or removed, depending on request.
+     * @param {HttpRequest} incomingReq - The incoming HTTP request.
+     * @returns {Record<string, string>} The headers for the revalidation request.
      */
     revalidationHeaders(incomingReq) {
         this._assertRequestHasHeaders(incomingReq);
@@ -277687,17 +278428,22 @@ module.exports = class CachePolicy {
      * Returns {policy, modified} where modified is a boolean indicating
      * whether the response body has been modified, and old cached body can't be used.
      *
-     * @return {Object} {policy: CachePolicy, modified: Boolean}
+     * @param {HttpRequest} request - The latest HTTP request asking for the cached entry.
+     * @param {HttpResponse} response - The latest revalidation HTTP response from the origin server.
+     * @returns {{policy: CachePolicy, modified: boolean, matches: boolean}} The updated policy and modification status.
+     * @throws {Error} If the response headers are missing.
      */
     revalidatedPolicy(request, response) {
         this._assertRequestHasHeaders(request);
-        if(this._useStaleIfError() && isErrorResponse(response)) {  // I consider the revalidation request unsuccessful
+
+        if (this._useStaleIfError() && isErrorResponse(response)) {
           return {
-            modified: false,
-            matches: false,
-            policy: this,
+              policy: this,
+              modified: false,
+              matches: true,
           };
         }
+
         if (!response || !response.headers) {
             throw Error('Response headers missing');
         }
@@ -277744,9 +278490,16 @@ module.exports = class CachePolicy {
             }
         }
 
+        const optionsCopy = {
+            shared: this._isShared,
+            cacheHeuristic: this._cacheHeuristic,
+            immutableMinTimeToLive: this._immutableMinTtl,
+            ignoreCargoCult: this._ignoreCargoCult,
+        };
+
         if (!matches) {
             return {
-                policy: new this.constructor(request, response),
+                policy: new this.constructor(request, response, optionsCopy),
                 // Client receiving 304 without body, even if it's invalid/mismatched has no option
                 // but to reuse a cached body. We don't have a good way to tell clients to do
                 // error recovery in such case.
@@ -277771,11 +278524,7 @@ module.exports = class CachePolicy {
             headers,
         });
         return {
-            policy: new this.constructor(request, newResponse, {
-                shared: this._isShared,
-                cacheHeuristic: this._cacheHeuristic,
-                immutableMinTimeToLive: this._immutableMinTtl,
-            }),
+            policy: new this.constructor(request, newResponse, optionsCopy),
             modified: false,
             matches: true,
         };
@@ -282193,6 +282942,8 @@ exports.AddressError = AddressError;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.isInSubnet = isInSubnet;
 exports.isHostInSubnet = isHostInSubnet;
+exports.isGloballyReachable = isGloballyReachable;
+exports.offsetBigInt = offsetBigInt;
 exports.isCorrect = isCorrect;
 exports.prefixLengthFromMask = prefixLengthFromMask;
 exports.assertByteArray = assertByteArray;
@@ -282227,9 +282978,55 @@ function isInSubnet(address) {
  * {@link isInSubnet} when classifying a single address — notably when the
  * address came from untrusted input and the result backs a trust-boundary
  * decision such as an SSRF allow/deny filter.
+ *
+ * An address of one family is never inside a network of the other, so an
+ * `Address4` against an `Address6` (or the reverse) is `false`. To compare
+ * across families, convert first: `Address6.fromAddress4()`, `to4()`, or
+ * `toAddress4Nat64()`.
  */
 function isHostInSubnet(address) {
+    // mask() is a bit string of the family's width, and the leading bits of a
+    // 32-bit string can coincide with those of a 128-bit one (a00::1 and
+    // 10.0.0.0/8 both mask to 00001010), so the widths must agree before the
+    // strings are compared.
+    if (this.binaryZeroPad().length !== address.binaryZeroPad().length) {
+        return false;
+    }
     return this.mask(address.subnetMask) === address.mask();
+}
+/**
+ * Returns whether the registry marks this address globally reachable: the
+ * answer of the most specific entry containing it that has one, or `true`
+ * when no entry contains it.
+ */
+function isGloballyReachable(entries) {
+    let best = null;
+    for (let i = 0; i < entries.length; i++) {
+        const entry = entries[i];
+        if (entry.reachable !== null &&
+            isHostInSubnet.call(this, entry.subnet) &&
+            (best === null || entry.subnet.subnetMask > best.subnet.subnetMask)) {
+            best = entry;
+        }
+    }
+    return best === null ? true : best.reachable;
+}
+/**
+ * Adds `n` to `value` and returns the result, throwing `AddressError` unless
+ * `n` is an integer and the result stays within `[0, 2**bits - 1]`.
+ */
+function offsetBigInt(value, n, bits, family) {
+    if (typeof n === 'number' && !Number.isSafeInteger(n)) {
+        throw new address_error_1.AddressError(`${family} offset must be an integer`);
+    }
+    if (typeof n !== 'number' && typeof n !== 'bigint') {
+        throw new address_error_1.AddressError(`${family} offset must be an integer`);
+    }
+    const result = value + BigInt(n);
+    if (result < BigInt(0) || result > (BigInt(1) << BigInt(bits)) - BigInt(1)) {
+        throw new address_error_1.AddressError(`${family} offset leaves the address space`);
+    }
+    return result;
 }
 function isCorrect(defaultBits) {
     return function isCorrectForm() {
@@ -282394,14 +283191,20 @@ class Address4 {
          */
         this.isCorrect = isCorrect4;
         /**
-         * Returns true if the given address is in the subnet of the current address
+         * Returns true if the given address is in the subnet of the current address.
+         * An `Address6` is never in the subnet of an `Address4`; convert with
+         * `to4()` or `Address6.fromAddress4()` to compare across families.
          * @returns {boolean}
          */
         this.isInSubnet = common.isInSubnet;
         /**
          * Returns true if this address's host bits fall inside the given subnet,
-         * ignoring this address's own subnet mask. See
-         * {@link common.isHostInSubnet}.
+         * ignoring this address's own subnet mask. Prefer this over `isInSubnet`
+         * when classifying a single address, so the answer doesn't change with the
+         * CIDR suffix the caller happened to write — notably when the address came
+         * from untrusted input and the result backs a trust-boundary decision.
+         * An `Address6` is never in the subnet of an `Address4`; convert with
+         * `to4()` or `Address6.fromAddress4()` to compare across families.
          * @returns {boolean}
          */
         this.isHostInSubnet = common.isHostInSubnet;
@@ -282415,6 +283218,13 @@ class Address4 {
                 throw new address_error_1.AddressError('Invalid subnet mask.');
             }
             address = address.replace(constants.RE_SUBNET_STRING, '');
+        }
+        // Four three-digit octets and three dots: the longest well-formed address
+        // is 15 characters. Longer input is rejected before parsing, as Address6
+        // does at its own limit.
+        const longest = constants.GROUPS * 4 - 1;
+        if (address.length > longest) {
+            throw new address_error_1.AddressError(`IPv4 addresses are at most ${longest} characters.`);
         }
         this.addressMinusSuffix = address;
         this.parsedAddress = this.parse(address);
@@ -282557,16 +283367,27 @@ class Address4 {
         return Address4.fromHex(integer.toString(16).padStart(8, '0'));
     }
     /**
-     * Return an address from in-addr.arpa form
+     * Return an address from in-addr.arpa form: the four octets reversed, with
+     * or without the `.in-addr.arpa` suffix and root dot, in any case. Throws
+     * `AddressError` unless the reversed labels form a valid IPv4 address, so
+     * `fromArpa(x.reverseForm())` round-trips {@link reverseForm}.
      * @param {string} arpaFormAddress - an 'in-addr.arpa' form ipv4 address
      * @returns {Adress4}
      * @example
-     * var address = Address4.fromArpa(42.2.0.192.in-addr.arpa.)
+     * var address = Address4.fromArpa('42.2.0.192.in-addr.arpa.')
      * address.correctForm(); // '192.0.2.42'
      */
     static fromArpa(arpaFormAddress) {
-        // remove ending ".in-addr.arpa." or just "."
-        const leader = arpaFormAddress.replace(/(\.in-addr\.arpa)?\.$/, '');
+        // A 15-character address, a "/32" prefix length and ".in-addr.arpa.": the
+        // longest name is 32 characters. Longer input is rejected before its
+        // labels are split, as the constructor does at its own limit.
+        const longest = constants.GROUPS * 4 - 1 + '/32'.length + '.in-addr.arpa.'.length;
+        if (arpaFormAddress.length > longest) {
+            throw new address_error_1.AddressError(`in-addr.arpa names are at most ${longest} characters.`);
+        }
+        // remove an ending ".in-addr.arpa", in any case and with or without the
+        // root dot, as Address6.fromArpa does for ".ip6.arpa"
+        const leader = arpaFormAddress.replace(/(\.in-addr\.arpa)?\.?$/i, '');
         const address = leader.split('.').reverse().join('.');
         return new Address4(address);
     }
@@ -282628,6 +283449,33 @@ class Address4 {
     startAddressExclusive() {
         const adjust = BigInt('1');
         return Address4.fromBigInt(this._startAddress() + adjust);
+    }
+    /**
+     * Returns the address `n` addresses after this one (or before, when `n` is
+     * negative), keeping this address's subnet mask. Throws `AddressError` when
+     * the result would fall outside the IPv4 address space or `n` is not an
+     * integer.
+     * @param {number | bigint} n
+     * @returns {Address4}
+     * @example
+     * new Address4('10.0.0.0/24').offset(1).correctForm(); // '10.0.0.1'
+     */
+    offset(n) {
+        return Address4.fromBigInt(common.offsetBigInt(this.bigInt(), n, constants.BITS, 'IPv4')).withSubnetMask(this.subnetMask);
+    }
+    /**
+     * Returns the network that follows this address's network: the address after
+     * {@link endAddress}, with the same subnet mask. Throws `AddressError` when
+     * this network is the last one in the address space.
+     * @returns {Address4}
+     * @example
+     * new Address4('10.0.0.0/24').nextNetwork().networkForm(); // '10.0.1.0/24'
+     */
+    nextNetwork() {
+        return Address4.fromBigInt(common.offsetBigInt(this._endAddress(), 1, constants.BITS, 'IPv4')).withSubnetMask(this.subnetMask);
+    }
+    withSubnetMask(subnetMask) {
+        return new Address4(`${this.correctForm()}/${subnetMask}`);
     }
     /**
      * Helper function getting end address.
@@ -282692,7 +283540,10 @@ class Address4 {
         return Address4.fromHex(bigInt.toString(16).padStart(8, '0'));
     }
     /**
-     * Convert a byte array to an Address4 object.
+     * Convert a byte array to an Address4 object. Throws `AddressError` unless
+     * given exactly 4 integers from 0 to 255. Signed bytes are rejected, so
+     * this differs from `Address6.fromByteArray`, which folds them; the two
+     * contracts converge on this stricter form in the next major version.
      *
      * To convert from a Node.js `Buffer`, spread it: `Address4.fromByteArray([...buf])`.
      * @param {Array<number>} bytes - an array of 4 bytes (0-255)
@@ -282703,7 +283554,12 @@ class Address4 {
         return this.fromUnsignedByteArray(bytes);
     }
     /**
-     * Convert an unsigned byte array to an Address4 object
+     * Convert an unsigned byte array to an Address4 object. Throws
+     * `AddressError` unless given exactly 4 bytes, and rejects values outside
+     * 0 to 255 when parsing the resulting address.
+     *
+     * To convert from a Node.js `Buffer`, spread it:
+     * `Address4.fromUnsignedByteArray([...buf])`.
      * @param {Array<number>} bytes - an array of 4 unsigned bytes (0-255)
      * @returns {Address4}
      */
@@ -282733,7 +283589,8 @@ class Address4 {
         return this.binaryZeroPad().slice(start, end);
     }
     /**
-     * Return the reversed ip6.arpa form of the address
+     * Return the reversed in-addr.arpa form of the address, e.g.
+     * `42.2.0.192.in-addr.arpa.` for `192.0.2.42`.
      * @param {Object} options
      * @param {boolean} options.omitSuffix - omit the "in-addr.arpa" suffix
      * @returns {String}
@@ -282798,6 +283655,43 @@ class Address4 {
         return this.isHostInSubnet(CGNAT_V4);
     }
     /**
+     * Returns true if the address is in one of the documentation ranges
+     * `192.0.2.0/24`, `198.51.100.0/24`, or `203.0.113.0/24` ([RFC 5737](https://datatracker.ietf.org/doc/html/rfc5737)).
+     * @returns {boolean}
+     */
+    isDocumentation() {
+        return DOCUMENTATION_V4.some((subnet) => this.isHostInSubnet(subnet));
+    }
+    /**
+     * Returns true if the address is in the benchmarking range `198.18.0.0/15` ([RFC 2544](https://datatracker.ietf.org/doc/html/rfc2544)).
+     * @returns {boolean}
+     */
+    isBenchmarking() {
+        return this.isHostInSubnet(BENCHMARKING_V4);
+    }
+    /**
+     * Returns true if the address is in the reserved range `240.0.0.0/4` ([RFC 1112](https://datatracker.ietf.org/doc/html/rfc1112)),
+     * which includes the limited broadcast address.
+     * @returns {boolean}
+     */
+    isReserved() {
+        return this.isHostInSubnet(RESERVED_V4);
+    }
+    /**
+     * Returns true if the address is globally reachable: not multicast, and not
+     * in any block the [IANA IPv4 Special-Purpose Address Registry](https://www.iana.org/assignments/iana-ipv4-special-registry/)
+     * marks as not globally reachable. That covers everything the individual
+     * classifiers name (private, loopback, link-local, CGNAT, unspecified,
+     * broadcast, documentation, benchmarking, reserved) and the blocks they do
+     * not, such as `0.0.0.0/8` and the IETF protocol assignments in
+     * `192.0.0.0/24`. This is the single predicate to use where a request must
+     * not reach an internal or special-purpose destination; see SECURITY.md.
+     * @returns {boolean}
+     */
+    isGlobal() {
+        return !this.isMulticast() && common.isGloballyReachable.call(this, SPECIAL_PURPOSE_V4);
+    }
+    /**
      * Returns a zero-padded base-2 string representation of the address
      * @returns {string}
      */
@@ -282808,7 +283702,12 @@ class Address4 {
         return this._binaryZeroPad;
     }
     /**
-     * Groups an IPv4 address for inclusion at the end of an IPv6 address
+     * Groups an IPv4 address for inclusion at the end of an IPv6 address.
+     *
+     * Returns an HTML fragment: each half of the address is wrapped in a
+     * `<span>` carrying the group classes an address-inspector UI hovers on.
+     * The address content is HTML-escaped; anything you concatenate around it
+     * is your responsibility.
      * @returns {String}
      */
     groupForV6() {
@@ -282832,6 +283731,17 @@ const LINK_LOCAL_V4 = new Address4('169.254.0.0/16');
 const UNSPECIFIED_V4 = new Address4('0.0.0.0/32');
 const BROADCAST_V4 = new Address4('255.255.255.255/32');
 const CGNAT_V4 = new Address4('100.64.0.0/10');
+const DOCUMENTATION_V4 = [
+    new Address4('192.0.2.0/24'),
+    new Address4('198.51.100.0/24'),
+    new Address4('203.0.113.0/24'),
+];
+const BENCHMARKING_V4 = new Address4('198.18.0.0/15');
+const RESERVED_V4 = new Address4('240.0.0.0/4');
+const SPECIAL_PURPOSE_V4 = constants.SPECIAL_PURPOSE.map(([cidr, , reachable]) => ({
+    subnet: new Address4(cidr),
+    reachable,
+}));
 //# sourceMappingURL=ipv4.js.map
 
 /***/ }),
@@ -282934,14 +283844,20 @@ class Address6 {
         this.zone = '';
         // #region Attributes
         /**
-         * Returns true if the given address is in the subnet of the current address
+         * Returns true if the given address is in the subnet of the current address.
+         * An `Address4` is never in the subnet of an `Address6`; convert with
+         * `Address6.fromAddress4()` or `to4()` to compare across families.
          * @returns {boolean}
          */
         this.isInSubnet = common.isInSubnet;
         /**
          * Returns true if this address's host bits fall inside the given subnet,
-         * ignoring this address's own subnet mask. See
-         * {@link common.isHostInSubnet}.
+         * ignoring this address's own subnet mask. Prefer this over `isInSubnet`
+         * when classifying a single address, so the answer doesn't change with the
+         * CIDR suffix the caller happened to write — notably when the address came
+         * from untrusted input and the result backs a trust-boundary decision.
+         * An `Address4` is never in the subnet of an `Address6`; convert with
+         * `Address6.fromAddress4()` or `to4()` to compare across families.
          * @returns {boolean}
          */
         this.isHostInSubnet = common.isHostInSubnet;
@@ -282975,10 +283891,23 @@ class Address6 {
         if (/\//.test(address)) {
             throw new address_error_1.AddressError('Invalid subnet mask.');
         }
-        const zone = constants6.RE_ZONE_STRING.exec(address);
-        if (zone) {
-            this.zone = zone[0];
-            address = address.replace(constants6.RE_ZONE_STRING, '');
+        // A zone runs from the first `%` to the end of the input and holds no line
+        // terminator. Finding it by index reads the input once, where matching
+        // RE_ZONE_STRING retries from every `%` that a line terminator disqualifies.
+        const zoneStart = address.indexOf('%');
+        if (zoneStart !== -1 && /^.*$/.test(address.slice(zoneStart))) {
+            this.zone = address.slice(zoneStart);
+            address = address.slice(0, zoneStart);
+        }
+        // The longest well-formed address is all but the last two groups written
+        // as four hex digits with their colons, then a 15-character dotted quad:
+        // 5 * (groups - 2) + 15, which is 45 for eight groups, the same line
+        // CPython's ipaddress module draws. Rejecting longer input here keeps the
+        // parse diagnostics, which wrap every offending character in a span,
+        // proportional to an address rather than to whatever was passed in.
+        const longest = this.groups * 5 + 5;
+        if (address.length > longest) {
+            throw new address_error_1.AddressError(`IPv6 addresses are at most ${longest} characters.`);
         }
         this.addressMinusSuffix = address;
         this.parsedAddress = this.parse(this.addressMinusSuffix);
@@ -283036,29 +283965,24 @@ class Address6 {
         let host;
         let port = null;
         let result;
+        let error;
         // Remove the protocol prefix, if any
         const stripped = url.replace(/^[a-z][a-z0-9+.-]*:\/\//i, '');
         // If we have brackets parse them and find a port
         if (stripped.indexOf('[') !== -1 && stripped.indexOf(']:') !== -1) {
+            error = 'failed to parse address with port';
             result = constants6.RE_URL_WITH_PORT.exec(stripped);
             if (result === null) {
-                return {
-                    error: 'failed to parse address with port',
-                    address: null,
-                    port: null,
-                };
+                return { error, address: null, port: null };
             }
             host = result[1];
             port = result[2];
         }
         else {
+            error = 'failed to parse address from URL';
             result = constants6.RE_URL.exec(stripped);
             if (result === null) {
-                return {
-                    error: 'failed to parse address from URL',
-                    address: null,
-                    port: null,
-                };
+                return { error, address: null, port: null };
             }
             host = (_a = result[1]) !== null && _a !== void 0 ? _a : result[2];
         }
@@ -283074,10 +283998,17 @@ class Address6 {
             // Standardize `undefined` to `null`
             port = null;
         }
-        return {
-            address: new Address6(host),
-            port,
-        };
+        // The URL character class is a superset of valid IPv6, so a host the
+        // regex accepted (an IPv4 literal, bare punctuation, too many groups)
+        // can still be rejected by the parser
+        let address;
+        try {
+            address = new Address6(host);
+        }
+        catch {
+            return { error, address: null, port: null };
+        }
+        return { address, port };
     }
     /**
      * Construct an `Address6` from an address and a hex subnet mask given as
@@ -283177,28 +284108,32 @@ class Address6 {
         return new Address6(`::ffff:${address4.correctForm()}/${mask6}`);
     }
     /**
-     * Return an address from ip6.arpa form
+     * Return an address from ip6.arpa form. A full 32-nibble name gives a /128
+     * address; a shorter name, as used for a delegated reverse zone, gives the
+     * network it covers, with a subnet mask of four bits per nibble, so
+     * `fromArpa(x.reverseForm())` round-trips {@link reverseForm} for any prefix.
      * @param {string} arpaFormAddress - an 'ip6.arpa' form address
      * @returns {Adress6}
      * @example
      * var address = Address6.fromArpa(e.f.f.f.3.c.2.6.f.f.f.e.6.6.8.e.1.0.6.7.9.4.e.c.0.0.0.0.1.0.0.2.ip6.arpa.)
      * address.correctForm(); // '2001:0:ce49:7601:e866:efff:62c3:fffe'
+     * Address6.fromArpa('8.b.d.0.1.0.0.2.ip6.arpa.').networkForm(); // '2001:db8::/32'
      */
     static fromArpa(arpaFormAddress) {
-        // remove ending ".ip6.arpa." or just "."
-        let address = arpaFormAddress.replace(/(\.ip6\.arpa)?\.$/, '');
-        const semicolonAmount = 7;
-        // correct ip6.arpa form with ending removed will be 63 characters
-        if (address.length !== 63) {
+        // remove an ending ".ip6.arpa", in any case and with or without the root
+        // dot
+        const nibbles = arpaFormAddress.replace(/(\.ip6\.arpa)?\.?$/i, '');
+        if (!/^[0-9a-f](\.[0-9a-f]){0,31}$/i.test(nibbles)) {
             throw new address_error_1.AddressError("Invalid 'ip6.arpa' form.");
         }
-        const parts = address.split('.').reverse();
-        for (let i = semicolonAmount; i > 0; i--) {
-            const insertIndex = i * 4;
-            parts.splice(insertIndex, 0, ':');
+        const reversed = nibbles.split('.').reverse();
+        const subnetMask = reversed.length * 4;
+        const hex = reversed.join('').padEnd(32, '0');
+        const groups = [];
+        for (let i = 0; i < constants6.GROUPS; i++) {
+            groups.push(hex.slice(i * 4, (i + 1) * 4));
         }
-        address = parts.join('');
-        return new Address6(address);
+        return new Address6(`${groups.join(':')}/${subnetMask}`);
     }
     /**
      * Return the Microsoft UNC transcription of the address
@@ -283262,21 +284197,52 @@ class Address6 {
         return BigInt(`0b${this.mask() + '1'.repeat(constants6.BITS - this.subnetMask)}`);
     }
     /**
-     * The last address in the range given by this address' subnet
-     * Often referred to as the Broadcast
+     * The last address in the range given by this address's subnet. IPv6 has
+     * no broadcast address, so this is an ordinary assignable address (in a
+     * 64-bit-interface-identifier subnet it falls inside the reserved
+     * subnet-anycast block of [RFC 2526](https://datatracker.ietf.org/doc/html/rfc2526)).
      * @returns {Address6}
      */
     endAddress() {
         return Address6.fromBigInt(this._endAddress());
     }
     /**
-     * The last host address in the range given by this address's subnet ie
-     * the last address prior to the Broadcast Address
+     * The address one before {@link endAddress}. This is the IPv6 counterpart
+     * of the IPv4 method that skips the broadcast address; IPv6 has no broadcast,
+     * so it drops exactly one address and does not model the 128 reserved
+     * subnet-anycast identifiers of [RFC 2526](https://datatracker.ietf.org/doc/html/rfc2526).
      * @returns {Address6}
      */
     endAddressExclusive() {
         const adjust = BigInt('1');
         return Address6.fromBigInt(this._endAddress() - adjust);
+    }
+    /**
+     * Returns the address `n` addresses after this one (or before, when `n` is
+     * negative), keeping this address's subnet mask. Throws `AddressError` when
+     * the result would fall outside the IPv6 address space or `n` is not an
+     * integer.
+     * @param {number | bigint} n
+     * @returns {Address6}
+     * @example
+     * new Address6('2001:db8::/64').offset(1).correctForm(); // '2001:db8::1'
+     */
+    offset(n) {
+        return Address6.fromBigInt(common.offsetBigInt(this.bigInt(), n, constants6.BITS, 'IPv6')).withSubnetMask(this.subnetMask);
+    }
+    /**
+     * Returns the network that follows this address's network: the address after
+     * {@link endAddress}, with the same subnet mask. Throws `AddressError` when
+     * this network is the last one in the address space.
+     * @returns {Address6}
+     * @example
+     * new Address6('2001:db8::/64').nextNetwork().networkForm(); // '2001:db8:0:1::/64'
+     */
+    nextNetwork() {
+        return Address6.fromBigInt(common.offsetBigInt(this._endAddress(), 1, constants6.BITS, 'IPv6')).withSubnetMask(this.subnetMask);
+    }
+    withSubnetMask(subnetMask) {
+        return new Address6(`${this.correctForm()}/${subnetMask}`);
     }
     /**
      * The hex form of the subnet mask, e.g. `ffff:ffff:ffff:ffff::` for a
@@ -283860,7 +284826,10 @@ class Address6 {
         return this.addressMinusSuffix === this.canonicalForm();
     }
     /**
-     * Returns true if the address is a link local address, false otherwise
+     * Returns true if the address is a link-local unicast address in `fe80::/10`
+     * ([RFC 4291 §2.4](https://datatracker.ietf.org/doc/html/rfc4291#section-2.4))
+     * or an IPv4-mapped / NAT64 address whose embedded IPv4 address is link-local
+     * (`169.254.0.0/16`, e.g. `::ffff:169.254.169.254`), false otherwise.
      * @returns {boolean}
      */
     isLinkLocal() {
@@ -283868,12 +284837,7 @@ class Address6 {
         if (embedded) {
             return embedded.isLinkLocal();
         }
-        // Zeroes are required, i.e. we can't check isHostInSubnet with 'fe80::/10'
-        if (this.getBitsBase2(0, 64) ===
-            '1111111010000000000000000000000000000000000000000000000000000000') {
-            return true;
-        }
-        return false;
+        return this.isHostInSubnet(LINK_LOCAL_SUBNET);
     }
     /**
      * Returns true if the address is a multicast address, false otherwise
@@ -283965,12 +284929,20 @@ class Address6 {
     }
     /**
      * Returns true if the address is private, i.e. a Unique Local Address in
-     * `fc00::/7` ([RFC 4193](https://datatracker.ietf.org/doc/html/rfc4193)) or an
-     * IPv4-mapped / NAT64 address whose embedded IPv4 address is in one of the
-     * [RFC 1918](https://datatracker.ietf.org/doc/html/rfc1918) private ranges
-     * (e.g. `::ffff:10.0.0.1`). This is the IPv6 counterpart to
+     * `fc00::/7` ([RFC 4193](https://datatracker.ietf.org/doc/html/rfc4193)), an
+     * address in the NAT64 local-use range `64:ff9b:1::/48`
+     * ([RFC 8215](https://datatracker.ietf.org/doc/html/rfc8215)), or an
+     * IPv4-mapped / NAT64 well-known address whose embedded IPv4 address is in
+     * one of the [RFC 1918](https://datatracker.ietf.org/doc/html/rfc1918)
+     * private ranges (e.g. `::ffff:10.0.0.1`). This is the IPv6 counterpart to
      * {@link Address4.isPrivate}; use it instead of {@link isULA} when you need to
      * catch mapped RFC 1918 addresses as well as native ULAs.
+     *
+     * The local-use NAT64 range is reported private as a whole rather than by
+     * its embedded IPv4 address: an operator may carve a prefix of any RFC 6052
+     * length out of `64:ff9b:1::/48`, so the same bits decode to different IPv4
+     * addresses under different deployments and no single decoding is correct.
+     * Use {@link toAddress4Nat64} with the deployment's prefix to decode one.
      * @returns {boolean}
      */
     isPrivate() {
@@ -283978,7 +284950,7 @@ class Address6 {
         if (embedded) {
             return embedded.isPrivate();
         }
-        return this.isULA();
+        return this.isULA() || this.isHostInSubnet(NAT64_LOCAL_USE_SUBNET);
     }
     /**
      * Returns true if the address is an IPv4-mapped / NAT64 address whose embedded
@@ -284026,7 +284998,49 @@ class Address6 {
      * @returns {boolean}
      */
     isDocumentation() {
-        return this.isHostInSubnet(DOCUMENTATION_SUBNET);
+        return DOCUMENTATION_SUBNETS.some((subnet) => this.isHostInSubnet(subnet));
+    }
+    /**
+     * Returns true if the address is in the benchmarking range `2001:2::/48`
+     * ([RFC 5180](https://datatracker.ietf.org/doc/html/rfc5180)) or is an
+     * IPv4-mapped / NAT64 address whose embedded IPv4 address is in
+     * `198.18.0.0/15`, false otherwise.
+     * @returns {boolean}
+     */
+    isBenchmarking() {
+        const embedded = this.embeddedIPv4();
+        if (embedded) {
+            return embedded.isBenchmarking();
+        }
+        return this.isHostInSubnet(BENCHMARKING_SUBNET);
+    }
+    /**
+     * Returns true if the address is globally reachable: inside the global
+     * unicast allocation `2000::/3` (the only range the [IANA IPv6 Address Space
+     * Registry](https://www.iana.org/assignments/ipv6-address-space/) assigns
+     * for global unicast; everything else is reserved, ULA, link-local, or
+     * multicast) and not in any block the [IANA IPv6 Special-Purpose Address Registry](https://www.iana.org/assignments/iana-ipv6-special-registry/)
+     * marks as not globally reachable. An IPv4-mapped or NAT64 well-known
+     * address answers for its embedded IPv4 address, so `::ffff:10.0.0.1` and
+     * `64:ff9b::7f00:1` are not global. Teredo (`2001::/32`) and 6to4
+     * (`2002::/16`) are not global either: the registry lists them as N/A and a
+     * packet to one needs a relay.
+     *
+     * This covers everything the individual classifiers name and the blocks they
+     * do not: the discard-only prefix `100::/64`, the IETF protocol assignments
+     * in `2001::/23`, the deprecated site-local `fec0::/10` and IPv4-compatible
+     * `::/96` ranges, and unallocated space such as `4000::/3`. It is the single
+     * predicate to use where a request must not reach an internal or
+     * special-purpose destination; see SECURITY.md.
+     * @returns {boolean}
+     */
+    isGlobal() {
+        const embedded = this.embeddedIPv4();
+        if (embedded) {
+            return embedded.isGlobal();
+        }
+        return (this.isHostInSubnet(GLOBAL_UNICAST_SUBNET) &&
+            common.isGloballyReachable.call(this, SPECIAL_PURPOSE_V6));
     }
     // #endregion
     // #region HTML
@@ -284079,7 +285093,12 @@ class Address6 {
         return `<a href="${safeHref}">${safeForm}</a>`;
     }
     /**
-     * Groups an address
+     * Groups an address.
+     *
+     * Returns an HTML fragment: each group is wrapped in a `<span>` carrying
+     * the group classes an address-inspector UI hovers on. The address content
+     * is HTML-escaped; anything you concatenate around it is your
+     * responsibility.
      * @returns {String}
      */
     group() {
@@ -284180,9 +285199,17 @@ const TYPE_SUBNETS = Object.keys(constants6.TYPES).map((subnet) => [
 const TEREDO_SUBNET = new Address6('2001::/32');
 const SIX_TO_FOUR_SUBNET = new Address6('2002::/16');
 const ULA_SUBNET = new Address6('fc00::/7');
-const DOCUMENTATION_SUBNET = new Address6('2001:db8::/32');
+const LINK_LOCAL_SUBNET = new Address6('fe80::/10');
+const DOCUMENTATION_SUBNETS = [new Address6('2001:db8::/32'), new Address6('3fff::/20')];
+const BENCHMARKING_SUBNET = new Address6('2001:2::/48');
+const GLOBAL_UNICAST_SUBNET = new Address6('2000::/3');
+const SPECIAL_PURPOSE_V6 = constants6.SPECIAL_PURPOSE.map(([cidr, , reachable]) => ({
+    subnet: new Address6(cidr),
+    reachable,
+}));
 const IPV4_MAPPED_SUBNET = new Address6('::ffff:0:0/96');
 const NAT64_WELL_KNOWN_SUBNET = new Address6('64:ff9b::/96');
+const NAT64_LOCAL_USE_SUBNET = new Address6('64:ff9b:1::/48');
 //# sourceMappingURL=ipv6.js.map
 
 /***/ }),
@@ -284193,7 +285220,7 @@ const NAT64_WELL_KNOWN_SUBNET = new Address6('64:ff9b::/96');
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.RE_SUBNET_STRING = exports.RE_ADDRESS = exports.GROUPS = exports.BITS = void 0;
+exports.SPECIAL_PURPOSE = exports.RE_SUBNET_STRING = exports.RE_ADDRESS = exports.GROUPS = exports.BITS = void 0;
 exports.BITS = 32;
 exports.GROUPS = 4;
 // Each octet is 0-255 written without a leading zero. A leading zero is
@@ -284202,6 +285229,45 @@ exports.GROUPS = 4;
 // disagree with the network stack about which host a string names.
 exports.RE_ADDRESS = /^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$/g;
 exports.RE_SUBNET_STRING = /\/\d{1,2}$/;
+/**
+ * The IANA IPv4 Special-Purpose Address Registry
+ * (https://www.iana.org/assignments/iana-ipv4-special-registry/), one entry
+ * per block: `[cidr, name, globallyReachable]`. A `null` reachability means
+ * the registry leaves the column blank and the block inherits the answer of
+ * the block containing it (or is global when nothing contains it).
+ *
+ * `Address4.isGlobal()` answers from the most specific entry containing the
+ * address. `test/data/iana-corpus.json` is generated from the registry's CSV
+ * and pins this table to it.
+ */
+exports.SPECIAL_PURPOSE = [
+    ['0.0.0.0/8', 'This network', false],
+    ['0.0.0.0/32', 'This host on this network', false],
+    ['10.0.0.0/8', 'Private-Use', false],
+    ['100.64.0.0/10', 'Shared Address Space', false],
+    ['127.0.0.0/8', 'Loopback', false],
+    ['169.254.0.0/16', 'Link Local', false],
+    ['172.16.0.0/12', 'Private-Use', false],
+    ['192.0.0.0/24', 'IETF Protocol Assignments', false],
+    ['192.0.0.0/29', 'IPv4 Service Continuity Prefix', false],
+    ['192.0.0.8/32', 'IPv4 dummy address', false],
+    ['192.0.0.9/32', 'Port Control Protocol Anycast', true],
+    ['192.0.0.10/32', 'Traversal Using Relays around NAT Anycast', true],
+    ['192.0.0.170/32', 'NAT64/DNS64 Discovery', false],
+    ['192.0.0.171/32', 'NAT64/DNS64 Discovery', false],
+    ['192.0.2.0/24', 'Documentation (TEST-NET-1)', false],
+    ['192.31.196.0/24', 'AS112-v4', true],
+    ['192.52.193.0/24', 'AMT', true],
+    ['192.88.99.0/24', 'Deprecated (6to4 Relay Anycast)', null],
+    ['192.88.99.2/32', '6a44-relay anycast address', false],
+    ['192.168.0.0/16', 'Private-Use', false],
+    ['192.175.48.0/24', 'Direct Delegation AS112 Service', true],
+    ['198.18.0.0/15', 'Benchmarking', false],
+    ['198.51.100.0/24', 'Documentation (TEST-NET-2)', false],
+    ['203.0.113.0/24', 'Documentation (TEST-NET-3)', false],
+    ['240.0.0.0/4', 'Reserved', false],
+    ['255.255.255.255/32', 'Limited Broadcast', false],
+];
 //# sourceMappingURL=constants.js.map
 
 /***/ }),
@@ -284212,7 +285278,7 @@ exports.RE_SUBNET_STRING = /\/\d{1,2}$/;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.RE_URL_WITH_PORT = exports.RE_URL = exports.RE_ZONE_STRING = exports.RE_SUBNET_STRING = exports.RE_BAD_ADDRESS = exports.RE_BAD_CHARACTERS = exports.TYPES = exports.SCOPES = exports.GROUPS = exports.BITS = void 0;
+exports.SPECIAL_PURPOSE = exports.RE_URL_WITH_PORT = exports.RE_URL = exports.RE_ZONE_STRING = exports.RE_SUBNET_STRING = exports.RE_BAD_ADDRESS = exports.RE_BAD_CHARACTERS = exports.TYPES = exports.SCOPES = exports.GROUPS = exports.BITS = void 0;
 exports.BITS = 128;
 exports.GROUPS = 8;
 /**
@@ -284260,8 +285326,14 @@ exports.TYPES = {
     'ff00::/8': 'Multicast',
     'fe80::/10': 'Link-local unicast',
     'fc00::/7': 'Unique local',
+    '2001::/32': 'Teredo',
+    '2001:2::/48': 'Benchmarking',
     '2002::/16': '6to4',
     '2001:db8::/32': 'Documentation',
+    '3fff::/20': 'Documentation',
+    '100::/64': 'Discard-only',
+    'fec0::/10': 'Site-local unicast (deprecated)',
+    '::/96': 'IPv4-compatible (deprecated)',
     '64:ff9b::/96': 'NAT64 (well-known)',
     '64:ff9b:1::/48': 'NAT64 (local-use)',
 };
@@ -284287,10 +285359,53 @@ exports.RE_SUBNET_STRING = /\/\d{1,3}(?=%|$)/;
  * A regular expression that matches an IPv6 zone
  * @memberof Address6
  * @static
+ * @deprecated Takes quadratic time on input holding many `%` characters
+ * followed by a line terminator. The library finds the zone by index, as
+ * `Address6`'s constructor shows, and 11.0.0 removes this export.
  */
 exports.RE_ZONE_STRING = /%.*$/;
 exports.RE_URL = /^(?:\[([0-9a-f:.]+)\]|([0-9a-f:.]+))(?:[/?#].*)?$/i;
 exports.RE_URL_WITH_PORT = /^\[([0-9a-f:.]+)\]:([0-9]{1,5})(?:[/?#].*)?$/i;
+/**
+ * The IANA IPv6 Special-Purpose Address Registry
+ * (https://www.iana.org/assignments/iana-ipv6-special-registry/), one entry
+ * per block: `[cidr, name, globallyReachable]`. A `null` reachability means
+ * the registry says N/A or leaves the column blank; N/A blocks (Teredo, 6to4)
+ * are treated as not globally reachable, since a packet to one needs a relay,
+ * and blank blocks inherit the answer of the block containing them.
+ *
+ * `Address6.isGlobal()` answers from the most specific entry containing the
+ * address, after delegating IPv4-mapped and NAT64 well-known addresses to the
+ * embedded IPv4 address. `test/data/iana-corpus.json` is generated from the
+ * registry's CSV and pins this table to it.
+ */
+exports.SPECIAL_PURPOSE = [
+    ['::1/128', 'Loopback Address', false],
+    ['::/128', 'Unspecified Address', false],
+    ['::ffff:0:0/96', 'IPv4-mapped Address', false],
+    ['64:ff9b::/96', 'IPv4-IPv6 Translat.', true],
+    ['64:ff9b:1::/48', 'IPv4-IPv6 Translat.', false],
+    ['100::/64', 'Discard-Only Address Block', false],
+    ['100:0:0:1::/64', 'Dummy IPv6 Prefix', false],
+    ['2001::/23', 'IETF Protocol Assignments', false],
+    ['2001::/32', 'TEREDO', false],
+    ['2001:1::1/128', 'Port Control Protocol Anycast', true],
+    ['2001:1::2/128', 'Traversal Using Relays around NAT Anycast', true],
+    ['2001:1::3/128', 'DNS-SD Service Registration Protocol Anycast', true],
+    ['2001:2::/48', 'Benchmarking', false],
+    ['2001:3::/32', 'AMT', true],
+    ['2001:4:112::/48', 'AS112-v6', true],
+    ['2001:10::/28', 'Deprecated (previously ORCHID)', null],
+    ['2001:20::/28', 'ORCHIDv2', true],
+    ['2001:30::/28', 'Drone Remote ID Protocol Entity Tags (DETs) Prefix', true],
+    ['2001:db8::/32', 'Documentation', false],
+    ['2002::/16', '6to4', false],
+    ['2620:4f:8000::/48', 'Direct Delegation AS112 Service', true],
+    ['3fff::/20', 'Documentation', false],
+    ['5f00::/16', 'Segment Routing (SRv6) SIDs', false],
+    ['fc00::/7', 'Unique-Local', false],
+    ['fe80::/10', 'Link-Local Unicast', false],
+];
 //# sourceMappingURL=constants.js.map
 
 /***/ }),
@@ -297854,8 +298969,9 @@ function indexesOf(array, item) {
     return indexes;
 }
 function uniqs() {
-    var list = Array.prototype.concat.apply([], arguments);
-    return list.filter(function (item, i) { return i === list.indexOf(item); });
+    // A Set keeps the first-occurrence order the previous filter/indexOf pass
+    // produced, without its quadratic cost on long index lists.
+    return Array.from(new Set(Array.prototype.concat.apply([], arguments)));
 }
 var Parser = /** @class */ (function () {
     function Parser(rule, options) {
@@ -297891,6 +299007,23 @@ var Parser = /** @class */ (function () {
             return _this.rule.error(message, errorOptions);
         };
     };
+    Parser.prototype.namespaceSeparatorFollows = function (attr, pos) {
+        var next = pos;
+        while (attr[next] && attr[next][tokenize_1.FIELDS.TYPE] === tokens.space) {
+            next++;
+        }
+        if (!attr[next] || this.content(attr[next]) !== "|") {
+            return false;
+        }
+        next++;
+        if (attr[next] && attr[next][tokenize_1.FIELDS.TYPE] === tokens.equals) {
+            return false;
+        }
+        while (attr[next] && attr[next][tokenize_1.FIELDS.TYPE] === tokens.space) {
+            next++;
+        }
+        return Boolean(attr[next]);
+    };
     Parser.prototype.attribute = function () {
         var attr = [];
         var startingToken = this.currToken;
@@ -297899,6 +299032,11 @@ var Parser = /** @class */ (function () {
             this.currToken[tokenize_1.FIELDS.TYPE] !== tokens.closeSquare) {
             attr.push(this.currToken);
             this.position++;
+        }
+        if (!this.currToken) {
+            // Ran off the end of the token stream: the attribute was never closed.
+            // Point at the opening bracket, which is where the author needs to look.
+            return this.expected("closing square bracket", startingToken[tokenize_1.FIELDS.START_POS]);
         }
         if (this.currToken[tokenize_1.FIELDS.TYPE] !== tokens.closeSquare) {
             return this.expected("closing square bracket", this.currToken[tokenize_1.FIELDS.START_POS]);
@@ -297916,6 +299054,7 @@ var Parser = /** @class */ (function () {
         var commentBefore = "";
         var lastAdded = null;
         var spaceAfterMeaningfulToken = false;
+        var namespaceSpaces = null;
         while (pos < len) {
             var token = attr[pos];
             var content = this.content(token);
@@ -297930,6 +299069,15 @@ var Parser = /** @class */ (function () {
                     // }
                     spaceAfterMeaningfulToken = true;
                     if (this.options.lossy) {
+                        break;
+                    }
+                    if (namespaceSpaces !== null) {
+                        namespaceSpaces += content;
+                        break;
+                    }
+                    if (lastAdded === "namespace") {
+                        (0, util_1.ensureObject)(node, "raws");
+                        node.raws.namespace = (node.raws.namespace || node.namespace) + content;
                         break;
                     }
                     if (lastAdded) {
@@ -297953,6 +299101,11 @@ var Parser = /** @class */ (function () {
                     }
                     else if ((!node.namespace || (lastAdded === "namespace" && !spaceAfterMeaningfulToken)) &&
                         next) {
+                        node.namespace = (node.namespace || "") + content;
+                        var rawValue = (0, util_1.getProp)(node, "raws", "namespace") || null;
+                        if (rawValue) {
+                            node.raws.namespace += content;
+                        }
                         if (spaceBefore) {
                             (0, util_1.ensureObject)(node, "spaces", "attribute");
                             node.spaces.attribute.before = spaceBefore;
@@ -297960,13 +299113,8 @@ var Parser = /** @class */ (function () {
                         }
                         if (commentBefore) {
                             (0, util_1.ensureObject)(node, "raws", "spaces", "attribute");
-                            node.raws.spaces.attribute.before = spaceBefore;
+                            node.raws.spaces.attribute.before = commentBefore;
                             commentBefore = "";
-                        }
-                        node.namespace = (node.namespace || "") + content;
-                        var rawValue = (0, util_1.getProp)(node, "raws", "namespace") || null;
-                        if (rawValue) {
-                            node.raws.namespace += content;
                         }
                         lastAdded = "namespace";
                     }
@@ -298002,18 +299150,16 @@ var Parser = /** @class */ (function () {
                         node.operator = content;
                         lastAdded = "operator";
                     }
-                    else if (!node.namespace && !node.attribute) {
-                        node.namespace = true;
+                    else if (!node.operator) {
+                        if (!node.namespace && !node.attribute) {
+                            node.namespace = true;
+                        }
+                        namespaceSpaces = "";
                     }
                     spaceAfterMeaningfulToken = false;
                     break;
                 case tokens.word:
-                    if (next &&
-                        this.content(next) === "|" &&
-                        attr[pos + 2] &&
-                        attr[pos + 2][tokenize_1.FIELDS.TYPE] !== tokens.equals && // this look-ahead probably fails with comment nodes involved.
-                        !node.operator &&
-                        !node.namespace) {
+                    if (this.namespaceSeparatorFollows(attr, pos + 1) && !node.operator && !node.namespace) {
                         node.namespace = content;
                         lastAdded = "namespace";
                     }
@@ -298028,6 +299174,11 @@ var Parser = /** @class */ (function () {
                             node.raws.spaces.attribute.before = commentBefore;
                             commentBefore = "";
                         }
+                        if (namespaceSpaces) {
+                            (0, util_1.ensureObject)(node, "raws");
+                            node.raws.attribute = namespaceSpaces + (node.raws.attribute || node.attribute || "");
+                        }
+                        namespaceSpaces = null;
                         node.attribute = (node.attribute || "") + content;
                         var rawValue = (0, util_1.getProp)(node, "raws", "attribute") || null;
                         if (rawValue) {
@@ -298339,7 +299490,34 @@ var Parser = /** @class */ (function () {
         }
         return this.newNode(node);
     };
+    // Whitespace is only ever stored on a node, as `spaces.before` or
+    // `spaces.after`. `space()` parks leading whitespace on `this.spaces` for the
+    // next node to claim, so a selector that ends before any node is created --
+    // `:not(a, )`, `:not( )`, a trailing `a, ` -- drops it. Park it on an empty
+    // string node instead, which is what `parseWhitespaceEquivalentTokens`
+    // already does for the comment-adjacent case.
+    Parser.prototype.flushPendingSpaces = function () {
+        if (!this.spaces) {
+            return;
+        }
+        var last = this.current.last;
+        if (last) {
+            // `space()` routes trailing whitespace to `this.spaces` whenever the
+            // selector so far holds nothing but comments, so `:not( /*c*/ )` lands
+            // here rather than on the `spaces.after` path.
+            last.spaces.after += this.spaces;
+            this.spaces = "";
+            return;
+        }
+        var token = this.currToken || this.prevToken;
+        this.newNode(new string_1.default({
+            value: "",
+            source: token ? getTokenSource(token) : undefined,
+            sourceIndex: token ? token[tokenize_1.FIELDS.START_POS] : 0,
+        }));
+    };
     Parser.prototype.comma = function () {
+        this.flushPendingSpaces();
         if (this.position === this.tokens.length - 1) {
             this.root.trailingComma = true;
             this.position++;
@@ -298386,7 +299564,21 @@ var Parser = /** @class */ (function () {
         return this.error("Unexpected '|'.", this.currToken[tokenize_1.FIELDS.START_POS]);
     };
     Parser.prototype.namespace = function () {
-        var before = (this.prevToken && this.content(this.prevToken)) || true;
+        var prev = this.prevToken;
+        // Only treat the previous token as a namespace prefix when it can actually
+        // be one (a type/word or the universal `*`). A comment, comma, combinator
+        // or whitespace before `|` means an empty namespace, not a prefix.
+        var before = prev &&
+            (prev[tokenize_1.FIELDS.TYPE] === tokens.word ||
+                prev[tokenize_1.FIELDS.TYPE] === tokens.asterisk ||
+                prev[tokenize_1.FIELDS.TYPE] === tokens.ampersand)
+            ? this.content(prev)
+            : true;
+        if (!this.nextToken) {
+            // A trailing `|` with nothing after it. `unexpectedPipe` reports against
+            // `currToken`, which is the pipe itself and always present here.
+            return this.unexpectedPipe();
+        }
         if (this.nextToken[tokenize_1.FIELDS.TYPE] === tokens.word) {
             this.position++;
             return this.word(before);
@@ -298416,6 +299608,7 @@ var Parser = /** @class */ (function () {
     Parser.prototype.parentheses = function () {
         var last = this.current.last;
         var unbalanced = 1;
+        var openingToken = this.currToken;
         this.position++;
         if (last && last.type === types.PSEUDO) {
             var selector = new selector_1.default({
@@ -298445,6 +299638,7 @@ var Parser = /** @class */ (function () {
                         this.parse();
                     }
                     else {
+                        this.flushPendingSpaces();
                         this.current.source.end = tokenEnd(this.currToken);
                         this.current.parent.source.end = tokenEnd(this.currToken);
                         this.position++;
@@ -298485,7 +299679,9 @@ var Parser = /** @class */ (function () {
             }
         }
         if (unbalanced) {
-            return this.expected("closing parenthesis", this.currToken[tokenize_1.FIELDS.START_POS]);
+            // `currToken` is undefined when the token stream ran out before the
+            // parenthesis was closed; fall back to the opening one.
+            return this.expected("closing parenthesis", (this.currToken || openingToken)[tokenize_1.FIELDS.START_POS]);
         }
     };
     Parser.prototype.pseudo = function () {
@@ -298590,8 +299786,14 @@ var Parser = /** @class */ (function () {
         // Eliminate Sass interpolations from the list of id indexes
         var interpolations = indexesOf(word, "#{");
         if (interpolations.length) {
-            hasId = hasId.filter(function (hashIndex) { return !~interpolations.indexOf(hashIndex); });
+            var interpolationIndexes_1 = new Set(interpolations);
+            hasId = hasId.filter(function (hashIndex) { return !interpolationIndexes_1.has(hashIndex); });
         }
+        // Membership tests are built once. Scanning the arrays per index would make
+        // a flat selector such as `.a.a.a...` quadratic in its number of class/id
+        // indexes, which is enough to pin a CPU core on attacker-supplied input.
+        var classIndexes = new Set(hasClass);
+        var idIndexes = new Set(hasId);
         var indices = (0, sortAscending_1.default)(uniqs(__spreadArray(__spreadArray([0], __read(hasClass), false), __read(hasId), false)));
         indices.forEach(function (ind, i) {
             var index = indices[i + 1] || word.length;
@@ -298603,7 +299805,7 @@ var Parser = /** @class */ (function () {
             var current = _this.currToken;
             var sourceIndex = current[tokenize_1.FIELDS.START_POS] + indices[i];
             var source = getSource(current[1], current[2] + ind, current[3], current[2] + (index - 1));
-            if (~hasClass.indexOf(ind)) {
+            if (classIndexes.has(ind)) {
                 var classNameOpts = {
                     value: value.slice(1),
                     source: source,
@@ -298611,7 +299813,7 @@ var Parser = /** @class */ (function () {
                 };
                 node = new className_1.default(unescapeProp(classNameOpts, "value"));
             }
-            else if (~hasId.indexOf(ind)) {
+            else if (idIndexes.has(ind)) {
                 var idOpts = {
                     value: value.slice(1),
                     source: source,
@@ -298646,6 +299848,7 @@ var Parser = /** @class */ (function () {
         while (this.position < this.tokens.length) {
             this.parse(true);
         }
+        this.flushPendingSpaces();
         this.current._inferEndPosition();
         return this.root;
     };
@@ -299510,8 +300713,22 @@ var Combinator = /** @class */ (function (_super) {
     function Combinator(opts) {
         var _this = _super.call(this, opts) || this;
         _this.type = types_1.COMBINATOR;
+        _this._constructed = true;
         return _this;
     }
+    Object.defineProperty(Combinator.prototype, "value", {
+        get: function () {
+            return this._value;
+        },
+        set: function (value) {
+            if (this._constructed && this.raws) {
+                delete this.raws.value;
+            }
+            this._value = value;
+        },
+        enumerable: false,
+        configurable: true
+    });
     return Combinator;
 }(node_1.default));
 exports["default"] = Combinator;
@@ -299797,6 +301014,7 @@ var Container = /** @class */ (function (_super) {
         var oldIndex = this.index(oldNode);
         var resetNode = [];
         for (var i = 2; i < arguments.length; i++) {
+            arguments[i].parent = this;
             resetNode.push(arguments[i]);
         }
         (_a = this.nodes).splice.apply(_a, __spreadArray([oldIndex + 1, 0, newNode], __read(resetNode), false));
@@ -299816,6 +301034,7 @@ var Container = /** @class */ (function (_super) {
         var oldIndex = this.index(oldNode);
         var resetNode = [];
         for (var i = 2; i < arguments.length; i++) {
+            arguments[i].parent = this;
             resetNode.push(arguments[i]);
         }
         (_a = this.nodes).splice.apply(_a, __spreadArray([oldIndex, 0, newNode], __read(resetNode), false));
@@ -301348,13 +302567,11 @@ exports["default"] = unesc;
 function gobbleHex(str) {
     var lower = str.toLowerCase();
     var hex = "";
-    var spaceTerminated = false;
     for (var i = 0; i < 6 && lower[i] !== undefined; i++) {
         var code = lower.charCodeAt(i);
         // check to see if we are dealing with a valid hex char [a-f|0-9]
         var valid = (code >= 97 && code <= 102) || (code >= 48 && code <= 57);
         // https://drafts.csswg.org/css-syntax/#consume-escaped-code-point
-        spaceTerminated = code === 32;
         if (!valid) {
             break;
         }
@@ -301363,15 +302580,21 @@ function gobbleHex(str) {
     if (hex.length === 0) {
         return undefined;
     }
+    var consumed = hex.length;
+    var next = str[consumed];
+    if (next === " " || next === "\t" || next === "\n" || next === "\r" || next === "\f") {
+        // CSS preprocessing treats CRLF as a single newline.
+        consumed += next === "\r" && str[consumed + 1] === "\n" ? 2 : 1;
+    }
     var codePoint = parseInt(hex, 16);
     var isSurrogate = codePoint >= 0xd800 && codePoint <= 0xdfff;
     // Add special case for
     // "If this number is zero, or is for a surrogate, or is greater than the maximum allowed code point"
     // https://drafts.csswg.org/css-syntax/#maximum-allowed-code-point
     if (isSurrogate || codePoint === 0x0000 || codePoint > 0x10ffff) {
-        return ["\uFFFD", hex.length + (spaceTerminated ? 1 : 0)];
+        return ["\uFFFD", consumed];
     }
-    return [String.fromCodePoint(codePoint), hex.length + (spaceTerminated ? 1 : 0)];
+    return [String.fromCodePoint(codePoint), consumed];
 }
 var CONTAINS_ESCAPE = /\\/;
 function unesc(str) {
@@ -301382,7 +302605,7 @@ function unesc(str) {
     var ret = "";
     for (var i = 0; i < str.length; i++) {
         if (str[i] === "\\") {
-            var gobbled = gobbleHex(str.slice(i + 1, i + 7));
+            var gobbled = gobbleHex(str.slice(i + 1, i + 9));
             if (gobbled !== undefined) {
                 ret += gobbled[0];
                 i += gobbled[1];
@@ -316681,7 +317904,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.SocksProxyAgent = void 0;
 const socks_1 = __nccwpck_require__(42474);
-const agent_base_1 = __nccwpck_require__(93322);
+const agent_base_1 = __nccwpck_require__(98894);
 const debug_1 = __importDefault(__nccwpck_require__(2830));
 const dns = __importStar(__nccwpck_require__(72250));
 const net = __importStar(__nccwpck_require__(69278));
@@ -316845,264 +318068,6 @@ function omit(obj, ...keys) {
     }
     return ret;
 }
-//# sourceMappingURL=index.js.map
-
-/***/ }),
-
-/***/ 51643:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.req = exports.json = exports.toBuffer = void 0;
-const http = __importStar(__nccwpck_require__(58611));
-const https = __importStar(__nccwpck_require__(65692));
-async function toBuffer(stream) {
-    let length = 0;
-    const chunks = [];
-    for await (const chunk of stream) {
-        length += chunk.length;
-        chunks.push(chunk);
-    }
-    return Buffer.concat(chunks, length);
-}
-exports.toBuffer = toBuffer;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function json(stream) {
-    const buf = await toBuffer(stream);
-    const str = buf.toString('utf8');
-    try {
-        return JSON.parse(str);
-    }
-    catch (_err) {
-        const err = _err;
-        err.message += ` (input: ${str})`;
-        throw err;
-    }
-}
-exports.json = json;
-function req(url, opts = {}) {
-    const href = typeof url === 'string' ? url : url.href;
-    const req = (href.startsWith('https:') ? https : http).request(url, opts);
-    const promise = new Promise((resolve, reject) => {
-        req
-            .once('response', resolve)
-            .once('error', reject)
-            .end();
-    });
-    req.then = promise.then.bind(promise);
-    return req;
-}
-exports.req = req;
-//# sourceMappingURL=helpers.js.map
-
-/***/ }),
-
-/***/ 93322:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __exportStar = (this && this.__exportStar) || function(m, exports) {
-    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Agent = void 0;
-const net = __importStar(__nccwpck_require__(69278));
-const http = __importStar(__nccwpck_require__(58611));
-const https_1 = __nccwpck_require__(65692);
-__exportStar(__nccwpck_require__(51643), exports);
-const INTERNAL = Symbol('AgentBaseInternalState');
-class Agent extends http.Agent {
-    constructor(opts) {
-        super(opts);
-        this[INTERNAL] = {};
-    }
-    /**
-     * Determine whether this is an `http` or `https` request.
-     */
-    isSecureEndpoint(options) {
-        if (options) {
-            // First check the `secureEndpoint` property explicitly, since this
-            // means that a parent `Agent` is "passing through" to this instance.
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            if (typeof options.secureEndpoint === 'boolean') {
-                return options.secureEndpoint;
-            }
-            // If no explicit `secure` endpoint, check if `protocol` property is
-            // set. This will usually be the case since using a full string URL
-            // or `URL` instance should be the most common usage.
-            if (typeof options.protocol === 'string') {
-                return options.protocol === 'https:';
-            }
-        }
-        // Finally, if no `protocol` property was set, then fall back to
-        // checking the stack trace of the current call stack, and try to
-        // detect the "https" module.
-        const { stack } = new Error();
-        if (typeof stack !== 'string')
-            return false;
-        return stack
-            .split('\n')
-            .some((l) => l.indexOf('(https.js:') !== -1 ||
-            l.indexOf('node:https:') !== -1);
-    }
-    // In order to support async signatures in `connect()` and Node's native
-    // connection pooling in `http.Agent`, the array of sockets for each origin
-    // has to be updated synchronously. This is so the length of the array is
-    // accurate when `addRequest()` is next called. We achieve this by creating a
-    // fake socket and adding it to `sockets[origin]` and incrementing
-    // `totalSocketCount`.
-    incrementSockets(name) {
-        // If `maxSockets` and `maxTotalSockets` are both Infinity then there is no
-        // need to create a fake socket because Node.js native connection pooling
-        // will never be invoked.
-        if (this.maxSockets === Infinity && this.maxTotalSockets === Infinity) {
-            return null;
-        }
-        // All instances of `sockets` are expected TypeScript errors. The
-        // alternative is to add it as a private property of this class but that
-        // will break TypeScript subclassing.
-        if (!this.sockets[name]) {
-            // @ts-expect-error `sockets` is readonly in `@types/node`
-            this.sockets[name] = [];
-        }
-        const fakeSocket = new net.Socket({ writable: false });
-        this.sockets[name].push(fakeSocket);
-        // @ts-expect-error `totalSocketCount` isn't defined in `@types/node`
-        this.totalSocketCount++;
-        return fakeSocket;
-    }
-    decrementSockets(name, socket) {
-        if (!this.sockets[name] || socket === null) {
-            return;
-        }
-        const sockets = this.sockets[name];
-        const index = sockets.indexOf(socket);
-        if (index !== -1) {
-            sockets.splice(index, 1);
-            // @ts-expect-error  `totalSocketCount` isn't defined in `@types/node`
-            this.totalSocketCount--;
-            if (sockets.length === 0) {
-                // @ts-expect-error `sockets` is readonly in `@types/node`
-                delete this.sockets[name];
-            }
-        }
-    }
-    // In order to properly update the socket pool, we need to call `getName()` on
-    // the core `https.Agent` if it is a secureEndpoint.
-    getName(options) {
-        const secureEndpoint = this.isSecureEndpoint(options);
-        if (secureEndpoint) {
-            // @ts-expect-error `getName()` isn't defined in `@types/node`
-            return https_1.Agent.prototype.getName.call(this, options);
-        }
-        // @ts-expect-error `getName()` isn't defined in `@types/node`
-        return super.getName(options);
-    }
-    createSocket(req, options, cb) {
-        const connectOpts = {
-            ...options,
-            secureEndpoint: this.isSecureEndpoint(options),
-        };
-        const name = this.getName(connectOpts);
-        const fakeSocket = this.incrementSockets(name);
-        Promise.resolve()
-            .then(() => this.connect(req, connectOpts))
-            .then((socket) => {
-            this.decrementSockets(name, fakeSocket);
-            if (socket instanceof http.Agent) {
-                try {
-                    // @ts-expect-error `addRequest()` isn't defined in `@types/node`
-                    return socket.addRequest(req, connectOpts);
-                }
-                catch (err) {
-                    return cb(err);
-                }
-            }
-            this[INTERNAL].currentSocket = socket;
-            // @ts-expect-error `createSocket()` isn't defined in `@types/node`
-            super.createSocket(req, options, cb);
-        }, (err) => {
-            this.decrementSockets(name, fakeSocket);
-            cb(err);
-        });
-    }
-    createConnection() {
-        const socket = this[INTERNAL].currentSocket;
-        this[INTERNAL].currentSocket = undefined;
-        if (!socket) {
-            throw new Error('No socket was returned in the `connect()` function');
-        }
-        return socket;
-    }
-    get defaultPort() {
-        return (this[INTERNAL].defaultPort ??
-            (this.protocol === 'https:' ? 443 : 80));
-    }
-    set defaultPort(v) {
-        if (this[INTERNAL]) {
-            this[INTERNAL].defaultPort = v;
-        }
-    }
-    get protocol() {
-        return (this[INTERNAL].protocol ??
-            (this.isSecureEndpoint() ? 'https:' : 'http:'));
-    }
-    set protocol(v) {
-        if (this[INTERNAL]) {
-            this[INTERNAL].protocol = v;
-        }
-    }
-}
-exports.Agent = Agent;
 //# sourceMappingURL=index.js.map
 
 /***/ }),
@@ -328661,11 +329626,77 @@ class Request {
     }
   }
 
-  onUpgrade (statusCode, headers, socket) {
+  /**
+   * @param {number|null} statusCode
+   * @param {Buffer[]|null} headers
+   * @param {import('node:stream').Duplex} socket
+   * @param {string} [statusText]
+   */
+  onUpgrade (statusCode, headers, socket, statusText = '') {
+    this.onFinally()
+
     assert(!this.aborted)
     assert(!this.completed)
 
-    return this[kHandler].onUpgrade(statusCode, headers, socket)
+    if (statusCode !== null) {
+      this.#publishUpgradeHeaders(statusCode, headers, statusText)
+    }
+
+    const result = this[kHandler].onUpgrade(statusCode, headers, socket)
+
+    if (!this.aborted) {
+      this.completed = true
+      if (statusCode !== null) {
+        this.#publishUpgradeTrailers()
+      }
+    }
+
+    return result
+  }
+
+  /**
+   * @param {number} statusCode
+   * @param {import('node:http2').IncomingHttpHeaders} headers
+   * @param {(headers: import('node:http2').IncomingHttpHeaders) => Buffer[]} parseHeaders
+   * @param {string} [statusText]
+   */
+  onUpgradeResponse (statusCode, headers, parseHeaders, statusText = '') {
+    assert(!this.aborted)
+    assert(this.completed)
+
+    if (channels.headers.hasSubscribers) {
+      this.#publishUpgradeHeaders(statusCode, parseHeaders(headers), statusText)
+    }
+    this.#publishUpgradeTrailers()
+  }
+
+  /**
+   * @param {Error} error
+   */
+  onUpgradeError (error) {
+    assert(!this.aborted)
+    assert(this.completed)
+
+    if (channels.error.hasSubscribers) {
+      channels.error.publish({ request: this, error })
+    }
+  }
+
+  /**
+   * @param {number} statusCode
+   * @param {Buffer[]} headers
+   * @param {string} statusText
+   */
+  #publishUpgradeHeaders (statusCode, headers, statusText) {
+    if (channels.headers.hasSubscribers) {
+      channels.headers.publish({ request: this, response: { statusCode, headers, statusText } })
+    }
+  }
+
+  #publishUpgradeTrailers () {
+    if (channels.trailers.hasSubscribers) {
+      channels.trailers.publish({ request: this, trailers: [] })
+    }
   }
 
   onComplete (trailers) {
@@ -328748,7 +329779,13 @@ function processHeader (request, key, val) {
       } else if (typeof val[i] === 'object') {
         throw new InvalidArgumentError(`invalid ${key} header`)
       } else {
-        arr.push(`${val[i]}`)
+        // Coerce primitives (and reject unsafe coercions such as functions
+        // with a crafted toString/Symbol.toPrimitive).
+        const str = `${val[i]}`
+        if (!isValidHeaderValue(str)) {
+          throw new InvalidArgumentError(`invalid ${key} header`)
+        }
+        arr.push(str)
       }
     }
     val = arr
@@ -328759,7 +329796,12 @@ function processHeader (request, key, val) {
   } else if (val === null) {
     val = ''
   } else {
+    // Coerce primitives (and reject unsafe coercions such as functions
+    // with a crafted toString/Symbol.toPrimitive).
     val = `${val}`
+    if (!isValidHeaderValue(val)) {
+      throw new InvalidArgumentError(`invalid ${key} header`)
+    }
   }
 
   if (headerName === 'host') {
@@ -329795,7 +330837,7 @@ function defaultFactory (origin, opts) {
 }
 
 class Agent extends DispatcherBase {
-  constructor ({ factory = defaultFactory, maxRedirections = 0, connect, ...options } = {}) {
+  constructor ({ factory = defaultFactory, maxRedirections = 0, connect, tls, ...options } = {}) {
     if (typeof factory !== 'function') {
       throw new InvalidArgumentError('factory must be a function.')
     }
@@ -329814,11 +330856,15 @@ class Agent extends DispatcherBase {
       connect = { ...connect }
     }
 
+    if (tls && typeof tls !== 'function') {
+      tls = { ...tls }
+    }
+
     this[kInterceptors] = options.interceptors?.Agent && Array.isArray(options.interceptors.Agent)
       ? options.interceptors.Agent
       : [createRedirectInterceptor({ maxRedirections })]
 
-    this[kOptions] = { ...util.deepClone(options), connect }
+    this[kOptions] = { ...util.deepClone(options), connect, tls }
     this[kOptions].interceptors = options.interceptors
       ? { ...options.interceptors }
       : undefined
@@ -330136,6 +331182,7 @@ const {
   RequestContentLengthMismatchError,
   ResponseContentLengthMismatchError,
   RequestAbortedError,
+  InvalidArgumentError,
   HeadersTimeoutError,
   HeadersOverflowError,
   SocketError,
@@ -330557,7 +331604,7 @@ class Parser {
   }
 
   onUpgrade (head) {
-    const { upgrade, client, socket, headers, statusCode } = this
+    const { upgrade, client, socket, headers, statusCode, statusText } = this
 
     assert(upgrade)
     assert(client[kSocket] === socket)
@@ -330592,9 +331639,10 @@ class Parser {
     client.emit('disconnect', client[kUrl], [client], new InformationalError('upgrade'))
 
     try {
-      request.onUpgrade(statusCode, headers, socket)
-    } catch (err) {
-      util.destroy(socket, err)
+      request.onUpgrade(statusCode, headers, socket, statusText)
+    } catch (error) {
+      util.errorRequest(client, request, error)
+      util.destroy(socket, error)
     }
 
     client[kResume]()
@@ -330851,8 +331899,6 @@ async function connectH1 (client, socket) {
   socket[kParser] = new Parser(client, socket, llhttpInstance)
 
   addListener(socket, 'error', function (err) {
-    assert(err.code !== 'ERR_TLS_CERT_ALTNAME_INVALID')
-
     const parser = this[kParser]
 
     // On Mac OS, we get an ECONNRESET even if there is a full body to be forwarded
@@ -331001,7 +332047,7 @@ async function connectH1 (client, socket) {
 
 function clearIdleSocketValidation (socket) {
   if (socket[kIdleSocketValidationTimeout]) {
-    clearTimeout(socket[kIdleSocketValidationTimeout])
+    clearImmediate(socket[kIdleSocketValidationTimeout])
     socket[kIdleSocketValidationTimeout] = null
   }
 
@@ -331010,15 +332056,23 @@ function clearIdleSocketValidation (socket) {
 
 function scheduleIdleSocketValidation (client, socket) {
   socket[kIdleSocketValidation] = 1
-  socket[kIdleSocketValidationTimeout] = setTimeout(() => {
+  // Yield to the check phase (after poll) so unsolicited bytes / FIN / RST
+  // already pending on this idle keep-alive socket are processed before the
+  // next request is written (GHSA-35p6-xmwp-9g52).
+  //
+  // setTimeout(0) pays Node's ~1ms timer floor on every sequential reuse
+  // (#5493). setImmediate avoids that, but an *unref'd* Immediate lets poll
+  // block for ~500ms when the event loop is otherwise idle (#5600 / #5606).
+  // A ref'd Immediate both keeps the pending request alive and makes poll
+  // return immediately — the hybrid those issues asked for.
+  socket[kIdleSocketValidationTimeout] = setImmediate(() => {
     socket[kIdleSocketValidationTimeout] = null
     socket[kIdleSocketValidation] = 2
 
     if (client[kSocket] === socket && !socket.destroyed) {
       client[kResume]()
     }
-  }, 0)
-  socket[kIdleSocketValidationTimeout].unref?.()
+  })
 }
 
 /**
@@ -331119,8 +332173,16 @@ function writeH1 (client, request) {
     }
     body = bodyStream.stream
     contentLength = bodyStream.length
-  } else if (util.isBlobLike(body) && request.contentType == null && body.type) {
-    headers.push('content-type', body.type)
+  } else if (util.isBlobLike(body) && request.contentType == null) {
+    const contentType = body.type
+    if (contentType) {
+      const contentTypeValue = `${contentType}`
+      if (!util.isValidHeaderValue(contentTypeValue)) {
+        util.errorRequest(client, request, new InvalidArgumentError('invalid content-type header'))
+        return false
+      }
+      headers.push('content-type', contentTypeValue)
+    }
   }
 
   if (body && typeof body.read === 'function') {
@@ -331159,12 +332221,22 @@ function writeH1 (client, request) {
   const socket = client[kSocket]
   clearIdleSocketValidation(socket)
 
-  const abort = (err) => {
-    if (request.aborted || request.completed) {
+  /**
+   * @param {Error} [error]
+   */
+  const abort = (error) => {
+    if (request.aborted) {
       return
     }
 
-    util.errorRequest(client, request, err || new RequestAbortedError())
+    if (request.completed) {
+      if (request.upgrade || request.method === 'CONNECT') {
+        util.destroy(socket, new InformationalError('aborted'))
+      }
+      return
+    }
+
+    util.errorRequest(client, request, error || new RequestAbortedError())
 
     util.destroy(body)
     util.destroy(socket, new InformationalError('aborted'))
@@ -331622,6 +332694,7 @@ module.exports = connectH1
 
 
 const assert = __nccwpck_require__(34589)
+const { errorMonitor } = __nccwpck_require__(78474)
 const { pipeline } = __nccwpck_require__(57075)
 const util = __nccwpck_require__(3440)
 const {
@@ -331698,6 +332771,15 @@ function parseH2Headers (headers) {
   return result
 }
 
+/**
+ * @param {import('node:http2').IncomingHttpHeaders} headers
+ * @returns {Buffer[]}
+ */
+function parseH2ResponseHeaders (headers) {
+  const { [HTTP2_HEADER_STATUS]: _statusCode, ...realHeaders } = headers
+  return parseH2Headers(realHeaders)
+}
+
 async function connectH2 (client, socket) {
   client[kSocket] = socket
 
@@ -331747,8 +332829,6 @@ async function connectH2 (client, socket) {
   socket[kHTTP2Session] = session
 
   util.addListener(socket, 'error', function (err) {
-    assert(err.code !== 'ERR_TLS_CERT_ALTNAME_INVALID')
-
     this[kError] = err
 
     this[kClient][kOnError](err)
@@ -331822,8 +332902,6 @@ function resumeH2 (client) {
 }
 
 function onHttp2SessionError (err) {
-  assert(err.code !== 'ERR_TLS_CERT_ALTNAME_INVALID')
-
   this[kSocket][kError] = err
   this[kClient][kOnError](err)
 }
@@ -331918,22 +332996,32 @@ function writeH2 (client, request) {
   headers[HTTP2_HEADER_AUTHORITY] = host || `${hostname}${port ? `:${port}` : ''}`
   headers[HTTP2_HEADER_METHOD] = method
 
-  const abort = (err) => {
-    if (request.aborted || request.completed) {
+  /**
+   * @param {Error} [error]
+   */
+  const abort = (error) => {
+    if (request.aborted) {
       return
     }
 
-    err = err || new RequestAbortedError()
+    if (request.completed) {
+      if (method === 'CONNECT' && stream != null) {
+        util.destroy(stream, error || new RequestAbortedError())
+      }
+      return
+    }
 
-    util.errorRequest(client, request, err)
+    error = error || new RequestAbortedError()
+
+    util.errorRequest(client, request, error)
 
     if (stream != null) {
-      util.destroy(stream, err)
+      util.destroy(stream, error)
     }
 
     // We do not destroy the socket as we can continue using the session
     // the stream get's destroyed and the session remains to create new streams
-    util.destroy(body, err)
+    util.destroy(body, error)
     client[kQueue][client[kRunningIdx]++] = null
     client[kResume]()
   }
@@ -331952,25 +333040,57 @@ function writeH2 (client, request) {
 
   if (method === 'CONNECT') {
     session.ref()
-    // We are already connected, streams are pending, first request
-    // will create a new stream. We trigger a request to create the stream and wait until
-    // `ready` event is triggered
     // We disabled endStream to allow the user to write to the stream
     stream = session.request(headers, { endStream: false, signal })
+    let upgradeResponseFinished = false
 
-    if (stream.id && !stream.pending) {
-      request.onUpgrade(null, null, stream)
-      ++session[kOpenStreams]
-      client[kQueue][client[kRunningIdx]++] = null
-    } else {
-      stream.once('ready', () => {
-        request.onUpgrade(null, null, stream)
-        ++session[kOpenStreams]
-        client[kQueue][client[kRunningIdx]++] = null
-      })
+    /**
+     * @param {import('node:http2').IncomingHttpHeaders} headers
+     */
+    const onResponse = (headers) => {
+      upgradeResponseFinished = true
+      stream.off(errorMonitor, onUpgradeError)
+      request.onUpgradeResponse(Number(headers[HTTP2_HEADER_STATUS]), headers, parseH2ResponseHeaders)
     }
 
+    /**
+     * @param {Error} error
+     */
+    const onUpgradeError = (error) => {
+      upgradeResponseFinished = true
+      stream.off('response', onResponse)
+      request.onUpgradeError(error)
+    }
+
+    const onReady = () => {
+      try {
+        request.onUpgrade(null, null, stream)
+      } catch (error) {
+        stream.off('response', onResponse)
+        abort(error)
+        return
+      }
+
+      if (request.aborted) {
+        return
+      }
+
+      stream.off('error', abort)
+      stream.once(errorMonitor, onUpgradeError)
+      client[kQueue][client[kRunningIdx]++] = null
+    }
+
+    stream.once('response', onResponse)
+    stream.once('error', abort)
+    ++session[kOpenStreams]
+    onReady()
+
     stream.once('close', () => {
+      if (!upgradeResponseFinished && request.completed) {
+        stream.off('response', onResponse)
+        stream.off(errorMonitor, onUpgradeError)
+        request.onUpgradeError(new InformationalError(`HTTP/2: "stream error" received - code ${stream.rstCode}`))
+      }
       session[kOpenStreams] -= 1
       if (session[kOpenStreams] === 0) session.unref()
     })
@@ -332480,9 +333600,10 @@ class Client extends DispatcherBase {
     // h2
     maxConcurrentStreams,
     allowH2,
-    webSocket
+    webSocket,
+    eventSource
   } = {}) {
-    super({ webSocket })
+    super({ webSocket, eventSource })
 
     if (keepAlive !== undefined) {
       throw new InvalidArgumentError('unsupported keepAlive, use pipelining=0 instead')
@@ -333004,6 +334125,7 @@ module.exports = Client
 "use strict";
 
 
+const buffer = __nccwpck_require__(4573)
 const Dispatcher = __nccwpck_require__(30883)
 const {
   ClientDestroyedError,
@@ -333016,6 +334138,7 @@ const kOnDestroyed = Symbol('onDestroyed')
 const kOnClosed = Symbol('onClosed')
 const kInterceptedDispatch = Symbol('Intercepted Dispatch')
 const kWebSocketOptions = Symbol('webSocketOptions')
+const kEventSourceOptions = Symbol('eventSourceOptions')
 
 class DispatcherBase extends Dispatcher {
   constructor (opts) {
@@ -333026,12 +334149,19 @@ class DispatcherBase extends Dispatcher {
     this[kClosed] = false
     this[kOnClosed] = []
     this[kWebSocketOptions] = opts?.webSocket ?? {}
+    this[kEventSourceOptions] = opts?.eventSource ?? {}
   }
 
   get webSocketOptions () {
     return {
       maxFragments: this[kWebSocketOptions].maxFragments ?? 131072,
       maxPayloadSize: this[kWebSocketOptions].maxPayloadSize ?? 128 * 1024 * 1024
+    }
+  }
+
+  get eventSourceOptions () {
+    return {
+      maxEventSize: this[kEventSourceOptions].maxEventSize ?? buffer.kStringMaxLength
     }
   }
 
@@ -334607,6 +335737,28 @@ function calculateRetryAfterHeader (retryAfter) {
   return new Date(retryAfter).getTime() - current
 }
 
+function validatePartialResponseContentLength (headers, range, statusCode, retryCount) {
+  const contentLength = headers['content-length']
+  if (contentLength == null) {
+    return null
+  }
+
+  if (!Number.isFinite(range.start) || !Number.isFinite(range.end)) {
+    return null
+  }
+
+  const length = Number(contentLength)
+  const expectedLength = range.end - range.start + 1
+  if (!Number.isFinite(length) || length !== expectedLength) {
+    return new RequestRetryError('Content-Length mismatch', statusCode, {
+      headers,
+      data: { count: retryCount }
+    })
+  }
+
+  return null
+}
+
 class RetryHandler {
   constructor (opts, handlers) {
     const { retryOptions, ...dispatchOpts } = opts
@@ -334660,6 +335812,7 @@ class RetryHandler {
     this.end = null
     this.etag = null
     this.resume = null
+    this.headersSent = false
 
     // Handle possible onConnect duplication
     this.handler.onConnect(reason => {
@@ -334670,6 +335823,20 @@ class RetryHandler {
         this.reason = reason
       }
     })
+  }
+
+  checkpointResponseEnd (headers, resume) {
+    if (this.end == null && this.opts.method !== 'HEAD') {
+      const contentLength = headers['content-length']
+      this.end = contentLength != null ? Number(contentLength) - 1 : null
+
+      assert(
+        this.end == null || Number.isFinite(this.end),
+        'invalid content-length'
+      )
+    }
+
+    this.resume = this.end != null ? resume : null
   }
 
   onRequestSent () {
@@ -334760,7 +335927,12 @@ class RetryHandler {
     this.retryCount += 1
 
     if (statusCode >= 300) {
-      if (this.retryOpts.statusCodes.includes(statusCode) === false) {
+      // Only expose a response if no earlier attempt has reached the caller.
+      // Otherwise abort this attempt so the error settles the existing body
+      // instead of replacing it with a new response.
+      if (!this.headersSent && this.retryOpts.statusCodes.includes(statusCode) === false) {
+        this.headersSent = true
+        this.checkpointResponseEnd(headers, resume)
         return this.handler.onHeaders(
           statusCode,
           rawHeaders,
@@ -334821,10 +335993,23 @@ class RetryHandler {
         return false
       }
 
+      const contentLengthError = validatePartialResponseContentLength(headers, contentRange, statusCode, this.retryCount)
+      if (contentLengthError != null) {
+        this.abort(contentLengthError)
+        return false
+      }
+
       const { start, size, end = size - 1 } = contentRange
 
-      assert(this.start === start, 'content-range mismatch')
-      assert(this.end == null || this.end === end, 'content-range mismatch')
+      if (this.start !== start || (this.end != null && this.end !== end)) {
+        this.abort(
+          new RequestRetryError('Content-Range mismatch', statusCode, {
+            headers,
+            data: { count: this.retryCount }
+          })
+        )
+        return false
+      }
 
       this.resume = resume
       return true
@@ -334836,12 +336021,19 @@ class RetryHandler {
         const range = parseRangeHeader(headers['content-range'])
 
         if (range == null) {
+          this.headersSent = true
           return this.handler.onHeaders(
             statusCode,
             rawHeaders,
             resume,
             statusMessage
           )
+        }
+
+        const contentLengthError = validatePartialResponseContentLength(headers, range, statusCode, this.retryCount)
+        if (contentLengthError != null) {
+          this.abort(contentLengthError)
+          return false
         }
 
         const { start, size, end = size - 1 } = range
@@ -334868,6 +336060,7 @@ class RetryHandler {
       )
 
       this.resume = resume
+      this.headersSent = true
       this.etag = headers.etag != null ? headers.etag : null
 
       // Weak etags are not useful for comparison nor cache
@@ -334907,7 +336100,7 @@ class RetryHandler {
   }
 
   onError (err) {
-    if (this.aborted || isDisturbed(this.opts.body)) {
+    if (this.aborted || isDisturbed(this.opts.body) || (this.headersSent && this.resume == null)) {
       return this.handler.onError(err)
     }
 
@@ -339115,7 +340308,7 @@ function validateCookiePath (path) {
 
     if (
       code < 0x20 || // exclude CTLs (0-31)
-      code === 0x7F || // DEL
+      code > 0x7E || // exclude DEL and non-ascii
       code === 0x3B // ;
     ) {
       throw new Error('Invalid cookie path')
@@ -339124,16 +340317,80 @@ function validateCookiePath (path) {
 }
 
 /**
- * I have no idea why these values aren't allowed to be honest,
- * but Deno tests these. - Khafra
+ * <let-dig> ::= <letter> | <digit>
+ *
+ * <letter> ::= any one of the 52 alphabetic characters A through Z in
+ * upper case and a through z in lower case
+ *
+ * <digit> ::= any one of the ten digits 0 through 9r
+ *
+ * @see https://www.rfc-editor.org/rfc/rfc1034#section-3.5
+ * @param {number} code
+ */
+function isLetterOrDigit (code) {
+  return (
+    (code >= 0x30 && code <= 0x39) || // 0-9
+    (code >= 0x41 && code <= 0x5A) || // A-Z
+    (code >= 0x61 && code <= 0x7A) // a-z
+  )
+}
+
+/**
+ * Validates a cookie domain against the "preferred name syntax".
+ *
+ * <domain>      ::= <subdomain> | " "
+ * <subdomain>   ::= <label> | <subdomain> "." <label>
+ * <label>       ::= <let-dig> [ [ <ldh-str> ] <let-dig> ]
+ * <ldh-str>     ::= <let-dig-hyp> | <let-dig-hyp> <ldh-str>
+ * <let-dig-hyp> ::= <let-dig> | "-"
+ *
+ * @see https://www.rfc-editor.org/rfc/rfc1034#section-3.5
+ * @see https://www.rfc-editor.org/rfc/rfc1123#section-2.1
+ * @see https://www.rfc-editor.org/rfc/rfc1035#section-2.3.4
  * @param {string} domain
  */
 function validateCookieDomain (domain) {
-  if (
-    domain.startsWith('-') ||
-    domain.endsWith('.') ||
-    domain.endsWith('-')
-  ) {
+  // <domain> ::= <subdomain> | " "
+  if (domain === ' ') {
+    return
+  }
+
+  if (domain.length > 255) {
+    throw new Error('Invalid cookie domain')
+  }
+
+  let labelLength = 0
+
+  for (let i = 0; i < domain.length; ++i) {
+    const code = domain.charCodeAt(i)
+
+    if (code === 0x2E) {
+      if (labelLength === 0) {
+        throw new Error('Invalid cookie domain')
+      }
+
+      if (domain.charCodeAt(i - 1) === 0x2D) { // "-"
+        throw new Error('Invalid cookie domain')
+      }
+
+      labelLength = 0
+      continue
+    }
+
+    if (labelLength === 0 && !isLetterOrDigit(code)) {
+      throw new Error('Invalid cookie domain')
+    }
+
+    if (!isLetterOrDigit(code) && code !== 0x2D) { // "-"
+      throw new Error('Invalid cookie domain')
+    }
+
+    if (++labelLength > 63) {
+      throw new Error('Invalid cookie domain')
+    }
+  }
+
+  if (labelLength === 0 || domain.charCodeAt(domain.length - 1) === 0x2D) { // "-"
     throw new Error('Invalid cookie domain')
   }
 }
@@ -339276,7 +340533,13 @@ function stringify (cookie) {
 
     const [key, ...value] = part.split('=')
 
-    out.push(`${key.trim()}=${value.join('=')}`)
+    const trimmedKey = key.trim()
+    const joinedValue = value.join('=')
+
+    validateCookieName(trimmedKey)
+    validateCookieValue(joinedValue)
+
+    out.push(`${trimmedKey}=${joinedValue}`)
   }
 
   return out.join('; ')
@@ -339299,6 +340562,7 @@ module.exports = {
 
 "use strict";
 
+const buffer = __nccwpck_require__(4573)
 const { Transform } = __nccwpck_require__(57075)
 const { isASCIINumber, isValidLastEventId } = __nccwpck_require__(94811)
 
@@ -339322,6 +340586,63 @@ const COLON = 0x3A
  * @type {32} SPACE
  */
 const SPACE = 0x20
+
+const defaultMaxEventSize = buffer.kStringMaxLength
+
+const DATA = Buffer.from('data')
+const EVENT = Buffer.from('event')
+const ID = Buffer.from('id')
+const RETRY = Buffer.from('retry')
+
+// Each data field creates a string node, and each unconsumed input chunk keeps
+// a Buffer wrapper. The absolute ceiling protects the large default byte limit.
+const minParserItems = 1024
+const maxParserItems = 131072
+const bytesPerParserItem = 128
+
+function isASCIINumberBytes (buffer, start) {
+  if (start >= buffer.length) {
+    return false
+  }
+
+  for (let i = start; i < buffer.length; i++) {
+    if (buffer[i] < 0x30 || buffer[i] > 0x39) {
+      return false
+    }
+  }
+
+  return true
+}
+
+function isValidLastEventIdBytes (buffer, start) {
+  for (let i = start; i < buffer.length; i++) {
+    if (buffer[i] === 0x00) {
+      return false
+    }
+  }
+
+  return true
+}
+
+function isFieldName (line, length, field) {
+  if (length !== field.length) {
+    return false
+  }
+
+  for (let i = 0; i < length; i++) {
+    if (line[i] !== field[i]) {
+      return false
+    }
+  }
+
+  return true
+}
+
+function createMaxEventSizeExceededError () {
+  const error = new Error('EventSource message size exceeded')
+  error.aborted = false
+  return error
+}
 
 /**
  * @typedef {object} EventSourceStreamEvent
@@ -339363,11 +340684,21 @@ class EventSourceStream extends Transform {
   eventEndCheck = false
 
   /**
-   * @type {Buffer}
+   * @type {Buffer[]}
    */
-  buffer = null
+  chunks = []
 
+  chunkIndex = 0
   pos = 0
+  lineChunkIndex = 0
+  linePos = 0
+  lineLength = 0
+  eventSize = 0
+  eventFieldSizes = { data: 0, event: 0, id: 0, retry: 0 }
+  dataLineCount = 0
+  maxEventSize
+  maxDataLines
+  maxBufferedChunks
 
   event = {
     data: undefined,
@@ -339378,6 +340709,7 @@ class EventSourceStream extends Transform {
 
   /**
    * @param {object} options
+   * @param {number} [options.maxEventSize]
    * @param {eventSourceSettings} options.eventSourceSettings
    * @param {Function} [options.push]
    */
@@ -339389,6 +340721,12 @@ class EventSourceStream extends Transform {
     super(options)
 
     this.state = options.eventSourceSettings || {}
+    this.maxEventSize = options.maxEventSize ?? defaultMaxEventSize
+    const parserItemLimit = this.maxEventSize > 0
+      ? Math.min(maxParserItems, Math.max(minParserItems, Math.floor(this.maxEventSize / bytesPerParserItem)))
+      : 0
+    this.maxDataLines = parserItemLimit
+    this.maxBufferedChunks = parserItemLimit
     if (options.push) {
       this.push = options.push
     }
@@ -339406,92 +340744,28 @@ class EventSourceStream extends Transform {
       return
     }
 
-    // Cache the chunk in the buffer, as the data might not be complete while
-    // processing it
-    // TODO: Investigate if there is a more performant way to handle
-    // incoming chunks
-    // see: https://github.com/nodejs/undici/issues/2630
-    if (this.buffer) {
-      this.buffer = Buffer.concat([this.buffer, chunk])
-    } else {
-      this.buffer = chunk
+    // A leading line ending can immediately release the currently buffered
+    // line, even when it uses the final allowed chunk slot.
+    if (this.maxEventSize > 0 &&
+        this.chunks.length >= this.maxBufferedChunks &&
+        chunk[0] !== LF && chunk[0] !== CR) {
+      callback(createMaxEventSizeExceededError())
+      return
     }
+    this.chunks.push(chunk)
 
     // Strip leading byte-order-mark if we opened the stream and started
     // the processing of the incoming data
     if (this.checkBOM) {
-      switch (this.buffer.length) {
-        case 1:
-          // Check if the first byte is the same as the first byte of the BOM
-          if (this.buffer[0] === BOM[0]) {
-            // If it is, we need to wait for more data
-            callback()
-            return
-          }
-          // Set the checkBOM flag to false as we don't need to check for the
-          // BOM anymore
-          this.checkBOM = false
-
-          // The buffer only contains one byte so we need to wait for more data
-          callback()
-          return
-        case 2:
-          // Check if the first two bytes are the same as the first two bytes
-          // of the BOM
-          if (
-            this.buffer[0] === BOM[0] &&
-            this.buffer[1] === BOM[1]
-          ) {
-            // If it is, we need to wait for more data, because the third byte
-            // is needed to determine if it is the BOM or not
-            callback()
-            return
-          }
-
-          // Set the checkBOM flag to false as we don't need to check for the
-          // BOM anymore
-          this.checkBOM = false
-          break
-        case 3:
-          // Check if the first three bytes are the same as the first three
-          // bytes of the BOM
-          if (
-            this.buffer[0] === BOM[0] &&
-            this.buffer[1] === BOM[1] &&
-            this.buffer[2] === BOM[2]
-          ) {
-            // If it is, we can drop the buffered data, as it is only the BOM
-            this.buffer = Buffer.alloc(0)
-            // Set the checkBOM flag to false as we don't need to check for the
-            // BOM anymore
-            this.checkBOM = false
-
-            // Await more data
-            callback()
-            return
-          }
-          // If it is not the BOM, we can start processing the data
-          this.checkBOM = false
-          break
-        default:
-          // The buffer is longer than 3 bytes, so we can drop the BOM if it is
-          // present
-          if (
-            this.buffer[0] === BOM[0] &&
-            this.buffer[1] === BOM[1] &&
-            this.buffer[2] === BOM[2]
-          ) {
-            // Remove the BOM from the buffer
-            this.buffer = this.buffer.subarray(3)
-          }
-
-          // Set the checkBOM flag to false as we don't need to check for the
-          this.checkBOM = false
-          break
+      if (this.handleBOM()) {
+        callback()
+        return
       }
     }
 
-    while (this.pos < this.buffer.length) {
+    while (this.hasCurrentByte()) {
+      const byte = this.currentByte()
+
       // If the previous line ended with an end-of-line, we need to check
       // if the next character is also an end-of-line.
       if (this.eventEndCheck) {
@@ -339504,10 +340778,9 @@ class EventSourceStream extends Transform {
         if (this.crlfCheck) {
           // If the current character is a line feed, we can remove it
           // from the buffer and reset the crlfCheck flag
-          if (this.buffer[this.pos] === LF) {
-            this.buffer = this.buffer.subarray(this.pos + 1)
-            this.pos = 0
+          if (byte === LF) {
             this.crlfCheck = false
+            this.consumeCurrentByte()
 
             // It is possible that the line feed is not the end of the
             // event. We need to check if the next character is an
@@ -339523,19 +340796,17 @@ class EventSourceStream extends Transform {
           this.crlfCheck = false
         }
 
-        if (this.buffer[this.pos] === LF || this.buffer[this.pos] === CR) {
+        if (byte === LF || byte === CR) {
           // If the current character is a carriage return, we need to
           // set the crlfCheck flag to true, as we need to check if the
           // next character is a line feed so we can remove it from the
           // buffer
-          if (this.buffer[this.pos] === CR) {
+          if (byte === CR) {
             this.crlfCheck = true
           }
 
-          this.buffer = this.buffer.subarray(this.pos + 1)
-          this.pos = 0
-          if (
-            this.event.data !== undefined || this.event.event || this.event.id || this.event.retry) {
+          this.consumeCurrentByte()
+          if (this.hasPendingEvent()) {
             this.processEvent(this.event)
           }
           this.clearEvent()
@@ -339549,22 +340820,23 @@ class EventSourceStream extends Transform {
 
       // If the current character is an end-of-line, we can process the
       // line
-      if (this.buffer[this.pos] === LF || this.buffer[this.pos] === CR) {
+      if (byte === LF || byte === CR) {
         // If the current character is a carriage return, we need to
         // set the crlfCheck flag to true, as we need to check if the
         // next character is a line feed
-        if (this.buffer[this.pos] === CR) {
+        if (byte === CR) {
           this.crlfCheck = true
         }
 
         // In any case, we can process the line as we reached an
         // end-of-line character
-        this.parseLine(this.buffer.subarray(0, this.pos), this.event)
-
-        // Remove the processed line from the buffer
-        this.buffer = this.buffer.subarray(this.pos + 1)
-        // Reset the position as we removed the processed line from the buffer
-        this.pos = 0
+        try {
+          this.parseLine(this.readLine(), this.event)
+        } catch (error) {
+          callback(error)
+          return
+        }
+        this.consumeCurrentByte()
         // A line was processed and this could be the end of the event. We need
         // to check if the next line is empty to determine if the event is
         // finished.
@@ -339572,15 +340844,28 @@ class EventSourceStream extends Transform {
         continue
       }
 
-      this.pos++
+      // readLine() is only called after CR or LF. Reject an unfinished line
+      // before it can retain an unbounded number of decoded chunks. The seven
+      // extra bytes allow the longest field prefix ("event: " or "retry: ").
+      if (this.maxEventSize > 0 && ++this.lineLength > this.maxEventSize + 7) {
+        callback(createMaxEventSizeExceededError())
+        return
+      }
+      this.advanceCursor()
     }
 
     callback()
   }
 
+  _destroy (error, callback) {
+    this.chunks.length = 0
+    this.clearEvent()
+    super._destroy(error, callback)
+  }
+
   /**
    * @param {Buffer} line
-   * @param {EventStreamEvent} event
+   * @param {EventSourceStreamEvent} event
    */
   parseLine (line, event) {
     // If the line is empty (a blank line)
@@ -339597,65 +340882,72 @@ class EventSourceStream extends Transform {
       return
     }
 
-    let field = ''
-    let value = ''
+    let fieldLength = line.length
+    let valueStart = line.length
 
     // If the line contains a U+003A COLON character (:)
     if (colonPosition !== -1) {
-      // Collect the characters on the line before the first U+003A COLON
-      // character (:), and let field be that string.
-      // TODO: Investigate if there is a more performant way to extract the
-      // field
-      // see: https://github.com/nodejs/undici/issues/2630
-      field = line.subarray(0, colonPosition).toString('utf8')
+      fieldLength = colonPosition
 
       // Collect the characters on the line after the first U+003A COLON
       // character (:), and let value be that string.
       // If value starts with a U+0020 SPACE character, remove it from value.
-      let valueStart = colonPosition + 1
+      valueStart = colonPosition + 1
       if (line[valueStart] === SPACE) {
         ++valueStart
       }
-      // TODO: Investigate if there is a more performant way to extract the
-      // value
-      // see: https://github.com/nodejs/undici/issues/2630
-      value = line.subarray(valueStart).toString('utf8')
-
-      // Otherwise, the string is not empty but does not contain a U+003A COLON
-      // character (:)
-    } else {
-      // Process the field using the steps described below, using the whole
-      // line as the field name, and the empty string as the field value.
-      field = line.toString('utf8')
-      value = ''
     }
 
-    // Modify the event with the field name and value. The value is also
-    // decoded as UTF-8
-    switch (field) {
-      case 'data':
-        if (event[field] === undefined) {
-          event[field] = value
-        } else {
-          event[field] += `\n${value}`
-        }
-        break
-      case 'retry':
-        if (isASCIINumber(value)) {
-          event[field] = value
-        }
-        break
-      case 'id':
-        if (isValidLastEventId(value)) {
-          event[field] = value
-        }
-        break
-      case 'event':
-        if (value.length > 0) {
-          event[field] = value
-        }
-        break
+    if (isFieldName(line, fieldLength, DATA)) {
+      if (this.maxEventSize > 0 && this.dataLineCount >= this.maxDataLines) {
+        throw createMaxEventSizeExceededError()
+      }
+      const valueBytes = line.length - valueStart
+      const dataSize = this.eventFieldSizes.data + (event.data === undefined ? 0 : 1) + valueBytes
+      this.setEventFieldSize('data', dataSize)
+
+      const value = line.toString('utf8', valueStart)
+
+      if (event.data === undefined) {
+        event.data = value
+      } else {
+        event.data += `\n${value}`
+      }
+      this.dataLineCount++
+      return
     }
+
+    if (isFieldName(line, fieldLength, RETRY)) {
+      if (isASCIINumberBytes(line, valueStart)) {
+        this.setEventFieldSize('retry', line.length - valueStart)
+        event.retry = line.toString('utf8', valueStart)
+      }
+      return
+    }
+
+    if (isFieldName(line, fieldLength, ID)) {
+      if (isValidLastEventIdBytes(line, valueStart)) {
+        this.setEventFieldSize('id', line.length - valueStart)
+        event.id = line.toString('utf8', valueStart)
+      }
+      return
+    }
+
+    if (isFieldName(line, fieldLength, EVENT)) {
+      if (valueStart < line.length) {
+        this.setEventFieldSize('event', line.length - valueStart)
+        event.event = line.toString('utf8', valueStart)
+      }
+    }
+  }
+
+  setEventFieldSize (field, size) {
+    const eventSize = this.eventSize - this.eventFieldSizes[field] + size
+    if (this.maxEventSize > 0 && eventSize > this.maxEventSize) {
+      throw createMaxEventSizeExceededError()
+    }
+    this.eventSize = eventSize
+    this.eventFieldSizes[field] = size
   }
 
   /**
@@ -339684,12 +340976,159 @@ class EventSourceStream extends Transform {
   }
 
   clearEvent () {
-    this.event = {
-      data: undefined,
-      event: undefined,
-      id: undefined,
-      retry: undefined
+    this.event.data = undefined
+    this.event.event = undefined
+    this.event.id = undefined
+    this.event.retry = undefined
+    this.eventSize = 0
+    this.dataLineCount = 0
+    this.eventFieldSizes.data = 0
+    this.eventFieldSizes.event = 0
+    this.eventFieldSizes.id = 0
+    this.eventFieldSizes.retry = 0
+  }
+
+  hasPendingEvent () {
+    return this.event.data !== undefined ||
+      this.event.event !== undefined ||
+      this.event.id !== undefined ||
+      this.event.retry !== undefined
+  }
+
+  hasCurrentByte () {
+    return this.chunkIndex < this.chunks.length &&
+      this.pos < this.chunks[this.chunkIndex].length
+  }
+
+  currentByte () {
+    return this.chunks[this.chunkIndex][this.pos]
+  }
+
+  consumeCurrentByte () {
+    this.advanceCursor()
+    this.syncLineStartToCursor()
+  }
+
+  advanceCursor () {
+    this.pos++
+
+    while (this.chunkIndex < this.chunks.length && this.pos >= this.chunks[this.chunkIndex].length) {
+      this.chunkIndex++
+      this.pos = 0
     }
+  }
+
+  syncLineStartToCursor () {
+    this.lineChunkIndex = this.chunkIndex
+    this.linePos = this.pos
+    this.lineLength = 0
+    this.dropConsumedChunks()
+  }
+
+  dropConsumedChunks () {
+    if (this.lineChunkIndex > 0) {
+      const consumed = this.lineChunkIndex
+      this.chunks.splice(0, consumed)
+      this.lineChunkIndex = 0
+      this.chunkIndex -= consumed
+    }
+
+    if (this.chunkIndex === this.chunks.length) {
+      this.chunks.length = 0
+      this.chunkIndex = 0
+      this.pos = 0
+      this.lineChunkIndex = 0
+      this.linePos = 0
+    }
+  }
+
+  readLine () {
+    if (this.lineChunkIndex === this.chunkIndex) {
+      return this.chunks[this.chunkIndex].subarray(this.linePos, this.pos)
+    }
+
+    const chunks = []
+    let length = 0
+
+    for (let i = this.lineChunkIndex; i <= this.chunkIndex; i++) {
+      const chunk = this.chunks[i]
+      const start = i === this.lineChunkIndex ? this.linePos : 0
+      const end = i === this.chunkIndex ? this.pos : chunk.length
+      const slice = chunk.subarray(start, end)
+      length += slice.length
+      chunks.push(slice)
+    }
+
+    return Buffer.concat(chunks, length)
+  }
+
+  peekBufferedByte (offset) {
+    let chunkIndex = this.lineChunkIndex
+    let pos = this.linePos
+
+    while (chunkIndex < this.chunks.length) {
+      const chunk = this.chunks[chunkIndex]
+      const remaining = chunk.length - pos
+
+      if (offset < remaining) {
+        return chunk[pos + offset]
+      }
+
+      offset -= remaining
+      chunkIndex++
+      pos = 0
+    }
+  }
+
+  discardLeadingBytes (count) {
+    while (count > 0 && this.lineChunkIndex < this.chunks.length) {
+      const chunk = this.chunks[this.lineChunkIndex]
+      const remaining = chunk.length - this.linePos
+
+      if (count < remaining) {
+        this.linePos += count
+        count = 0
+      } else {
+        count -= remaining
+        this.lineChunkIndex++
+        this.linePos = 0
+      }
+    }
+
+    this.chunkIndex = this.lineChunkIndex
+    this.pos = this.linePos
+    this.dropConsumedChunks()
+  }
+
+  handleBOM () {
+    const first = this.peekBufferedByte(0)
+    const second = this.peekBufferedByte(1)
+    const third = this.peekBufferedByte(2)
+
+    if (second === undefined) {
+      if (first === BOM[0]) {
+        return true
+      }
+
+      this.checkBOM = false
+      return true
+    }
+
+    if (third === undefined) {
+      if (first === BOM[0] && second === BOM[1]) {
+        return true
+      }
+
+      this.checkBOM = false
+      return false
+    }
+
+    if (first === BOM[0] && second === BOM[1] && third === BOM[2]) {
+      this.discardLeadingBytes(3)
+    }
+
+    this.checkBOM = false
+    return !this.hasCurrentByte()
   }
 }
 
@@ -339717,6 +341156,7 @@ const { isNetworkError } = __nccwpck_require__(99051)
 const { delay } = __nccwpck_require__(94811)
 const { kEnumerableProperty } = __nccwpck_require__(3440)
 const { environmentSettingsObject } = __nccwpck_require__(73168)
+const { getGlobalDispatcher } = __nccwpck_require__(32581)
 
 let experimentalWarned = false
 
@@ -339998,6 +341438,7 @@ class EventSource extends EventTarget {
 
       const eventSourceStream = new EventSourceStream({
         eventSourceSettings: this.#state,
+        maxEventSize: this.#dispatcher.eventSourceOptions?.maxEventSize,
         push: (event) => {
           this.dispatchEvent(createFastMessageEvent(
             event.type,
@@ -340176,7 +341617,8 @@ webidl.converters.EventSourceInitDict = webidl.dictionaryConverter([
   },
   {
     key: 'dispatcher', // undici only
-    converter: webidl.converters.any
+    converter: webidl.converters.any,
+    defaultValue: () => getGlobalDispatcher()
   }
 ])
 
@@ -345283,8 +346725,10 @@ async function httpNetworkFetch (
   // 19. Run these steps in parallel:
 
   //    1. Run these steps, but abort when fetchParams is canceled:
-  fetchParams.controller.onAborted = onAborted
-  fetchParams.controller.on('terminated', onAborted)
+  if (!fetchParams.controller.resume) {
+    fetchParams.controller.on('terminated', onAborted)
+  }
+
   fetchParams.controller.resume = async () => {
     // 1. While true
     while (true) {
@@ -345453,8 +346897,6 @@ async function httpNetworkFetch (
           }
           location = headersList.get('location', true)
 
-          this.body = new Readable({ read: resume })
-
           const decoders = []
 
           const willFollow = location && request.redirect === 'follow' &&
@@ -345472,7 +346914,7 @@ async function httpNetworkFetch (
             // CVE fix similar to urllib3 (GHSA-gm62-xv2j-4w53) and curl (CVE-2022-32206).
             const maxContentEncodings = 5
             if (codings.length > maxContentEncodings) {
-              reject(new Error(`too many content-encodings in response: ${codings.length}, maximum allowed is ${maxContentEncodings}`))
+              this.abort(new Error(`too many content-encodings in response: ${codings.length}, maximum allowed is ${maxContentEncodings}`))
               return true
             }
 
@@ -345504,6 +346946,8 @@ async function httpNetworkFetch (
               }
             }
           }
+
+          this.body = new Readable({ read: resume })
 
           const onError = this.onError.bind(this)
 
@@ -345549,10 +346993,6 @@ async function httpNetworkFetch (
         onComplete () {
           if (this.abort) {
             fetchParams.controller.off('terminated', this.abort)
-          }
-
-          if (fetchParams.controller.onAborted) {
-            fetchParams.controller.off('terminated', fetchParams.controller.onAborted)
           }
 
           fetchParams.controller.ended = true
@@ -350981,7 +352421,7 @@ function establishWebSocketConnection (url, protocols, client, ws, onEstablish, 
         // is specified, the server needs to include the same field and one of
         // the selected subprotocol values in its response for the connection to
         // be established.
-        if (!requestProtocols.includes(secProtocol)) {
+        if (requestProtocols === null || !requestProtocols.includes(secProtocol)) {
           failWebsocketConnection(ws, 'Protocol was not set in the opening handshake.')
           return
         }
@@ -351746,7 +353186,12 @@ class PerMessageDeflate {
 
         if (this.#maxPayloadSize > 0 && this.#inflate[kLength] > this.#maxPayloadSize) {
           callback(new MessageSizeExceededError())
+          // The inflater may still hold buffered input that can emit a late
+          // zlib error. Remove the data listener, then deterministically stop
+          // the stream so a subsequent 'error' cannot fire without a listener
+          // (which would terminate the process as an unhandled error event).
           this.#inflate.removeAllListeners()
+          this.#inflate.destroy()
           this.#inflate = null
           return
         }
@@ -352040,6 +353485,20 @@ class ByteParser extends Writable {
         if (isControlFrame(this.#info.opcode)) {
           this.#loop = this.parseControlFrame(body)
           this.#state = parserStates.INFO
+
+          // If the automatic PONG/CLOSE reply filled the socket's write buffer,
+          // stop parsing and resume on drain so a PING flood cannot grow the
+          // outbound queue without bound.
+          const socket = this.ws[kResponse].socket
+          if (this.#loop && socket.writableNeedDrain) {
+            this.#loop = false
+            socket.once('drain', () => {
+              if (this.destroyed) return
+              this.#loop = true
+              this.run(callback)
+            })
+            return
+          }
         } else {
           if (!this.#info.compressed) {
             if (!this.writeFragments(body)) {
@@ -359046,7 +360505,7 @@ exports.range = range;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.EXPANSION_MAX = void 0;
+exports.EXPANSION_MAX_REWRITES = exports.EXPANSION_MAX_DEPTH = exports.EXPANSION_MAX_LENGTH = exports.EXPANSION_MAX = void 0;
 exports.expand = expand;
 const balanced_match_1 = __nccwpck_require__(92867);
 const escSlash = '\0SLASH' + Math.random() + '\0';
@@ -359065,6 +360524,35 @@ const closePattern = /\\}/g;
 const commaPattern = /\\,/g;
 const periodPattern = /\\\./g;
 exports.EXPANSION_MAX = 100_000;
+// `EXPANSION_MAX` caps the *number* of expansions, but not their length. An
+// input like `'{a,b}'.repeat(1500)` stays under that count - its output is
+// truncated to 100k results - while making every result ~1500 characters
+// long. The result set, and the intermediate arrays built while combining
+// brace sets, then grow large enough to exhaust memory and crash the process
+// (CVE-2026-14257). `EXPANSION_MAX_LENGTH` bounds the total number of
+// characters the accumulator may hold at any point, so memory stays flat no
+// matter how many brace groups are chained. The limit sits well above any
+// realistic expansion (100k results hitting `EXPANSION_MAX` measure ~1M
+// characters) so legitimate input is unaffected.
+exports.EXPANSION_MAX_LENGTH = 4_000_000;
+// `expand_` recurses once per level of brace *nesting* - both when expanding a
+// set's comma members and when re-wrapping a set whose body is a single part.
+// The CVE-2026-14257 fix made the *tail* iterative (recursion on `m.post`, one
+// level per chained group), which left nesting depth unbounded: about 3,100
+// levels of `{{{...a,b...}}}` - only ~6KB of input - exhausted the native stack
+// and crashed the process. `EXPANSION_MAX_DEPTH` bounds how deep the parser
+// will follow nesting. It sits far above any realistic pattern and well below
+// the depth at which the stack runs out.
+exports.EXPANSION_MAX_DEPTH = 1_000;
+// Bash keeps a quirk where a brace group followed by a comma set still expands
+// (`{a},b}`). The parser implements it by rewriting the string and restarting
+// the scan, absorbing one `}` per pass. `n` trailing braces therefore cost `n`
+// full passes over a string that itself grows by one `escClose` sentinel each
+// time - quadratic in `n`, with a ~26x constant from the sentinel's length.
+// 128KB of `'{a}' + '}'.repeat(n) + ',z}'` blocked the event loop for 27
+// seconds to produce two results. `EXPANSION_MAX_REWRITES` bounds how many
+// times the scan may restart. Real `{a},b}` input needs a handful.
+exports.EXPANSION_MAX_REWRITES = 1_000;
 function numeric(str) {
     return !isNaN(str) ? parseInt(str, 10) : str.charCodeAt(0);
 }
@@ -359084,37 +360572,52 @@ function unescapeBraces(str) {
         .replace(escCommaPattern, ',')
         .replace(escPeriodPattern, '.');
 }
+// Like `target.push(...items)` but doesn't overflow the stack
+function pushAll(target, items) {
+    for (let i = 0; i < items.length; i++) {
+        target.push(items[i]);
+    }
+}
 /**
  * Basically just str.split(","), but handling cases
  * where we have nested braced sections, which should be
  * treated as individual members, like {a,{b,c},d}
  */
 function parseCommaParts(str) {
-    if (!str) {
-        return [''];
-    }
     const parts = [];
-    const m = (0, balanced_match_1.balanced)('{', '}', str);
-    if (!m) {
-        return str.split(',');
+    // Walk the brace groups iteratively. Recursing on `post` once per group let a
+    // chain of them exhaust the stack - the parsing-side counterpart to
+    // the `expand_` overflow fixed for CVE-2026-14257, and not something `max` or
+    // `maxLength` can bound, since it happens before expansion.
+    //
+    // The part the next chunk continues
+    let carry = '';
+    for (;;) {
+        const m = (0, balanced_match_1.balanced)('{', '}', str);
+        if (!m) {
+            const tail = str.split(',');
+            tail[0] = carry + tail[0];
+            pushAll(parts, tail);
+            return parts;
+        }
+        const { pre, body, post } = m;
+        const p = pre.split(',');
+        p[0] = carry + p[0];
+        p[p.length - 1] += '{' + body + '}';
+        if (!post.length) {
+            pushAll(parts, p);
+            return parts;
+        }
+        carry = p.pop();
+        pushAll(parts, p);
+        str = post;
     }
-    const { pre, body, post } = m;
-    const p = pre.split(',');
-    p[p.length - 1] += '{' + body + '}';
-    const postParts = parseCommaParts(post);
-    if (post.length) {
-        ;
-        p[p.length - 1] += postParts.shift();
-        p.push.apply(p, postParts);
-    }
-    parts.push.apply(parts, p);
-    return parts;
 }
 function expand(str, options = {}) {
     if (!str) {
         return [];
     }
-    const { max = exports.EXPANSION_MAX } = options;
+    const { max = exports.EXPANSION_MAX, maxLength = exports.EXPANSION_MAX_LENGTH, maxDepth = exports.EXPANSION_MAX_DEPTH, maxRewrites = exports.EXPANSION_MAX_REWRITES, } = options;
     // I don't know why Bash 4.3 does this, but it does.
     // Anything starting with {} will have the first two bytes preserved
     // but *only* at the top level, so {},a}b will not expand to anything,
@@ -359124,7 +360627,7 @@ function expand(str, options = {}) {
     if (str.slice(0, 2) === '{}') {
         str = '\\{\\}' + str.slice(2);
     }
-    return expand_(escapeBraces(str), max, true).map(unescapeBraces);
+    return expand_(escapeBraces(str), max, maxLength, maxDepth, 0, maxRewrites, true).map(unescapeBraces);
 }
 function embrace(str) {
     return '{' + str + '}';
@@ -359138,111 +360641,199 @@ function lte(i, y) {
 function gte(i, y) {
     return i >= y;
 }
-function expand_(str, max, isTop) {
-    /** @type {string[]} */
-    const expansions = [];
-    const m = (0, balanced_match_1.balanced)('{', '}', str);
-    if (!m)
-        return [str];
-    // no need to expand pre, since it is guaranteed to be free of brace-sets
-    const pre = m.pre;
-    const post = m.post.length ? expand_(m.post, max, false) : [''];
-    if (/\$$/.test(m.pre)) {
-        for (let k = 0; k < post.length && k < max; k++) {
-            const expansion = pre + '{' + m.body + '}' + post[k];
-            expansions.push(expansion);
+// Build `{ acc[a] + pre + values[v] }` for every combination, capping the
+// number of results at `max` and the total number of characters at `maxLength`.
+// This is the one place output grows, so bounding it here keeps the single
+// accumulator - and therefore memory - flat regardless of how many brace groups
+// are combined (CVE-2026-14257).
+function combine(acc, pre, values, max, maxLength, dropEmpties) {
+    const out = [];
+    let length = 0;
+    for (let a = 0; a < acc.length; a++) {
+        for (let v = 0; v < values.length; v++) {
+            if (out.length >= max)
+                return out;
+            const expansion = acc[a] + pre + values[v];
+            // Bash drops empty results at the top level. Skip them before they count
+            // against `max`, so `max` bounds the number of *kept* results.
+            if (dropEmpties && !expansion)
+                continue;
+            if (length + expansion.length > maxLength)
+                return out;
+            out.push(expansion);
+            length += expansion.length;
         }
     }
-    else {
+    return out;
+}
+// The expansion values of a single numeric (`1..5`) or alphabetic (`a..e..2`)
+// sequence body.
+function expandSequence(body, isAlphaSequence, max, maxLength) {
+    const n = body.split(/\.\./);
+    const N = [];
+    // A sequence body always splits into two or three parts, but the compiler
+    // can't know that.
+    /* c8 ignore start */
+    if (n[0] === undefined || n[1] === undefined) {
+        return N;
+    }
+    /* c8 ignore stop */
+    const x = numeric(n[0]);
+    const y = numeric(n[1]);
+    const width = Math.max(n[0].length, n[1].length);
+    let incr = n.length === 3 && n[2] !== undefined ?
+        Math.max(Math.abs(numeric(n[2])), 1)
+        : 1;
+    let test = lte;
+    const reverse = y < x;
+    if (reverse) {
+        incr *= -1;
+        test = gte;
+    }
+    const pad = n.some(isPadded);
+    let length = 0;
+    for (let i = x; test(i, y) && N.length < max; i += incr) {
+        let c;
+        if (isAlphaSequence) {
+            c = String.fromCharCode(i);
+            if (c === '\\') {
+                c = '';
+            }
+        }
+        else {
+            c = String(i);
+            if (pad) {
+                const need = width - c.length;
+                if (need > 0) {
+                    const z = new Array(need + 1).join('0');
+                    if (i < 0) {
+                        c = '-' + z + c.slice(1);
+                    }
+                    else {
+                        c = z + c;
+                    }
+                }
+            }
+        }
+        if (length + c.length > maxLength)
+            break;
+        N.push(c);
+        length += c.length;
+    }
+    return N;
+}
+function expand_(str, max, maxLength, maxDepth, depth, maxRewrites, isTop) {
+    // Too deeply nested to keep following: treat the rest as literal, the same
+    // way a group that cannot expand is already handled. Truncating rather than
+    // throwing keeps `expand` total, matching `max` and `maxLength`.
+    if (depth > maxDepth) {
+        return [str];
+    }
+    // Consume the string's top-level brace groups left to right, threading a
+    // running set of combined prefixes (`acc`). Expanding the tail iteratively -
+    // rather than recursing on `m.post` once per group - keeps the native stack
+    // depth constant, so deeply chained input (`'{a,b}'.repeat(3000)`) can no
+    // longer overflow the stack, and leaves a single accumulator whose size
+    // `maxLength` bounds directly (CVE-2026-14257).
+    let acc = [''];
+    // Bash drops empty results, but only when the *first* top-level group is a
+    // comma set - a sequence like `{a..\}` may legitimately yield ''. The drop
+    // is on the final strings, so it is applied to whichever `combine` produces
+    // them (the one with no brace set left in the tail).
+    // How many times the `{a},b}` rewrite below has restarted the scan. Each pass
+    // re-reads the whole string, so leaving this unbounded is quadratic.
+    let rewrites = 0;
+    let dropEmpties = false;
+    let firstGroup = true;
+    for (;;) {
+        const m = (0, balanced_match_1.balanced)('{', '}', str);
+        // No brace set left: the rest of the string is literal.
+        if (!m) {
+            return combine(acc, str, [''], max, maxLength, dropEmpties);
+        }
+        // no need to expand pre, since it is guaranteed to be free of brace-sets
+        const pre = m.pre;
+        if (/\$$/.test(pre)) {
+            acc = combine(acc, pre + '{' + m.body + '}', [''], max, maxLength, dropEmpties && !m.post.length);
+            firstGroup = false;
+            if (!m.post.length)
+                break;
+            str = m.post;
+            continue;
+        }
         const isNumericSequence = /^-?\d+\.\.-?\d+(?:\.\.-?\d+)?$/.test(m.body);
         const isAlphaSequence = /^[a-zA-Z]\.\.[a-zA-Z](?:\.\.-?\d+)?$/.test(m.body);
         const isSequence = isNumericSequence || isAlphaSequence;
         const isOptions = m.body.indexOf(',') >= 0;
         if (!isSequence && !isOptions) {
             // {a},b}
-            if (m.post.match(/,(?!,).*\}/)) {
+            if (rewrites < maxRewrites && m.post.match(/,(?!,).*\}/)) {
+                rewrites++;
                 str = m.pre + '{' + m.body + escClose + m.post;
-                return expand_(str, max, true);
+                isTop = true;
+                continue;
             }
-            return [str];
+            // Nothing here expands, so the whole remaining string is literal.
+            return combine(acc, pre + '{' + m.body + '}' + m.post, [''], max, maxLength, dropEmpties);
         }
-        let n;
+        if (firstGroup) {
+            dropEmpties = isTop && !isSequence;
+            firstGroup = false;
+        }
+        let values;
         if (isSequence) {
-            n = m.body.split(/\.\./);
+            values = expandSequence(m.body, isAlphaSequence, max, maxLength);
         }
         else {
-            n = parseCommaParts(m.body);
+            let n = parseCommaParts(m.body);
             if (n.length === 1 && n[0] !== undefined) {
                 // x{{a,b}}y ==> x{a}y x{b}y
-                n = expand_(n[0], max, false).map(embrace);
+                n = expand_(n[0], max, maxLength, maxDepth, depth + 1, maxRewrites, false).map(embrace);
                 //XXX is this necessary? Can't seem to hit it in tests.
                 /* c8 ignore start */
                 if (n.length === 1) {
-                    return post.map(p => m.pre + n[0] + p);
+                    acc = combine(acc, pre + n[0], [''], max, maxLength, dropEmpties && !m.post.length);
+                    if (!m.post.length)
+                        break;
+                    str = m.post;
+                    continue;
                 }
                 /* c8 ignore stop */
             }
-        }
-        // at this point, n is the parts, and we know it's not a comma set
-        // with a single entry.
-        let N;
-        if (isSequence && n[0] !== undefined && n[1] !== undefined) {
-            const x = numeric(n[0]);
-            const y = numeric(n[1]);
-            const width = Math.max(n[0].length, n[1].length);
-            let incr = n.length === 3 && n[2] !== undefined ?
-                Math.max(Math.abs(numeric(n[2])), 1)
-                : 1;
-            let test = lte;
-            const reverse = y < x;
-            if (reverse) {
-                incr *= -1;
-                test = gte;
+            // Values that `combine` is going to drop as empty produce no result, so
+            // they must not count against `max` - otherwise `{a,,b}` with `max: 2`
+            // would stop at `['a', '']` and yield one result instead of two. Skipping
+            // them outright keeps `values` bounded while leaving `max` a bound on
+            // *kept* results.
+            let dropsEmpties = dropEmpties && !m.post.length && !pre;
+            for (let d = 0; dropsEmpties && d < acc.length; d++) {
+                if (acc[d]) {
+                    dropsEmpties = false;
+                }
             }
-            const pad = n.some(isPadded);
-            N = [];
-            for (let i = x; test(i, y); i += incr) {
-                let c;
-                if (isAlphaSequence) {
-                    c = String.fromCharCode(i);
-                    if (c === '\\') {
-                        c = '';
+            values = [];
+            let valuesLength = 0;
+            outer: for (let j = 0; j < n.length; j++) {
+                const expanded = expand_(n[j], max, maxLength, maxDepth, depth + 1, maxRewrites, false);
+                for (let k = 0; k < expanded.length; k++) {
+                    const v = expanded[k];
+                    if (dropsEmpties && !v)
+                        continue;
+                    if (values.length >= max ||
+                        valuesLength + v.length > maxLength) {
+                        break outer;
                     }
-                }
-                else {
-                    c = String(i);
-                    if (pad) {
-                        const need = width - c.length;
-                        if (need > 0) {
-                            const z = new Array(need + 1).join('0');
-                            if (i < 0) {
-                                c = '-' + z + c.slice(1);
-                            }
-                            else {
-                                c = z + c;
-                            }
-                        }
-                    }
-                }
-                N.push(c);
-            }
-        }
-        else {
-            N = [];
-            for (let j = 0; j < n.length; j++) {
-                N.push.apply(N, expand_(n[j], max, false));
-            }
-        }
-        for (let j = 0; j < N.length; j++) {
-            for (let k = 0; k < post.length && expansions.length < max; k++) {
-                const expansion = pre + N[j] + post[k];
-                if (!isTop || isSequence || expansion) {
-                    expansions.push(expansion);
+                    values.push(v);
+                    valuesLength += v.length;
                 }
             }
         }
+        acc = combine(acc, pre, values, max, maxLength, dropEmpties && !m.post.length);
+        if (!m.post.length)
+            break;
+        str = m.post;
     }
-    return expansions;
+    return acc;
 }
 //# sourceMappingURL=index.js.map
 
@@ -361058,21 +362649,26 @@ class Stack {
 /**
  * Default export, the thing you're using this module to get.
  *
- * All properties from the options object (with the exception of
- * {@link OptionsBase.max} and {@link OptionsBase.maxSize}) are added as
- * normal public members. (`max` and `maxBase` are read-only getters.)
- * Changing any of these will alter the defaults for subsequent method calls,
- * but is otherwise safe.
+ * The `K` and `V` types define the key and value types, respectively. The
+ * optional `FC` type defines the type of the `context` object passed to
+ * `cache.fetch()` and `cache.memo()`.
+ *
+ * Keys and values **must not** be `null` or `undefined`.
+ *
+ * All properties from the options object (with the exception of `max`,
+ * `maxSize`, `fetchMethod`, `memoMethod`, `dispose` and `disposeAfter`) are
+ * added as normal public members. (The listed options are read-only getters.)
+ *
+ * Changing any of these will alter the defaults for subsequent method calls.
  */
 class LRUCache {
-    // properties coming in from the options of these, only max and maxSize
-    // really *need* to be protected. The rest can be modified, as they just
-    // set defaults for various methods.
+    // options that cannot be changed without disaster
     #max;
     #maxSize;
     #dispose;
     #disposeAfter;
     #fetchMethod;
+    #memoMethod;
     /**
      * {@link LRUCache.OptionsBase.ttl}
      */
@@ -361218,6 +362814,9 @@ class LRUCache {
     get fetchMethod() {
         return this.#fetchMethod;
     }
+    get memoMethod() {
+        return this.#memoMethod;
+    }
     /**
      * {@link LRUCache.OptionsBase.dispose} (read-only)
      */
@@ -361231,7 +362830,7 @@ class LRUCache {
         return this.#disposeAfter;
     }
     constructor(options) {
-        const { max = 0, ttl, ttlResolution = 1, ttlAutopurge, updateAgeOnGet, updateAgeOnHas, allowStale, dispose, disposeAfter, noDisposeOnSet, noUpdateTTL, maxSize = 0, maxEntrySize = 0, sizeCalculation, fetchMethod, noDeleteOnFetchRejection, noDeleteOnStaleGet, allowStaleOnFetchRejection, allowStaleOnFetchAbort, ignoreFetchAbort, } = options;
+        const { max = 0, ttl, ttlResolution = 1, ttlAutopurge, updateAgeOnGet, updateAgeOnHas, allowStale, dispose, disposeAfter, noDisposeOnSet, noUpdateTTL, maxSize = 0, maxEntrySize = 0, sizeCalculation, fetchMethod, memoMethod, noDeleteOnFetchRejection, noDeleteOnStaleGet, allowStaleOnFetchRejection, allowStaleOnFetchAbort, ignoreFetchAbort, } = options;
         if (max !== 0 && !isPosInt(max)) {
             throw new TypeError('max option must be a nonnegative integer');
         }
@@ -361251,6 +362850,11 @@ class LRUCache {
                 throw new TypeError('sizeCalculation set to non-function');
             }
         }
+        if (memoMethod !== undefined &&
+            typeof memoMethod !== 'function') {
+            throw new TypeError('memoMethod must be a function if defined');
+        }
+        this.#memoMethod = memoMethod;
         if (fetchMethod !== undefined &&
             typeof fetchMethod !== 'function') {
             throw new TypeError('fetchMethod must be a function if specified');
@@ -361329,7 +362933,8 @@ class LRUCache {
         }
     }
     /**
-     * Return the remaining TTL time for a given entry key
+     * Return the number of ms left in the item's TTL. If item is not in cache,
+     * returns `0`. Returns `Infinity` if item is in cache without a defined TTL.
      */
     getRemainingTTL(key) {
         return this.#keyMap.has(key) ? Infinity : 0;
@@ -361345,7 +362950,7 @@ class LRUCache {
             if (ttl !== 0 && this.ttlAutopurge) {
                 const t = setTimeout(() => {
                     if (this.#isStale(index)) {
-                        this.delete(this.#keyList[index]);
+                        this.#delete(this.#keyList[index], 'expire');
                     }
                 }, ttl + 1);
                 // unref() not supported on all platforms
@@ -361602,13 +363207,14 @@ class LRUCache {
         return this.entries();
     }
     /**
-     * A String value that is used in the creation of the default string description of an object.
-     * Called by the built-in method Object.prototype.toString.
+     * A String value that is used in the creation of the default string
+     * description of an object. Called by the built-in method
+     * `Object.prototype.toString`.
      */
     [Symbol.toStringTag] = 'LRUCache';
     /**
      * Find a value for which the supplied fn method returns a truthy value,
-     * similar to Array.find().  fn is called as fn(value, key, cache).
+     * similar to `Array.find()`. fn is called as `fn(value, key, cache)`.
      */
     find(fn, getOptions = {}) {
         for (const i of this.#indexes()) {
@@ -361624,10 +363230,15 @@ class LRUCache {
         }
     }
     /**
-     * Call the supplied function on each item in the cache, in order from
-     * most recently used to least recently used.  fn is called as
-     * fn(value, key, cache).  Does not update age or recenty of use.
-     * Does not iterate over stale values.
+     * Call the supplied function on each item in the cache, in order from most
+     * recently used to least recently used.
+     *
+     * `fn` is called as `fn(value, key, cache)`.
+     *
+     * If `thisp` is provided, function will be called in the `this`-context of
+     * the provided object, or the cache if no `thisp` object is provided.
+     *
+     * Does not update age or recenty of use, or iterate over stale values.
      */
     forEach(fn, thisp = this) {
         for (const i of this.#indexes()) {
@@ -361663,7 +363274,7 @@ class LRUCache {
         let deleted = false;
         for (const i of this.#rindexes({ allowStale: true })) {
             if (this.#isStale(i)) {
-                this.delete(this.#keyList[i]);
+                this.#delete(this.#keyList[i], 'expire');
                 deleted = true;
             }
         }
@@ -361671,9 +363282,15 @@ class LRUCache {
     }
     /**
      * Get the extended info about a given entry, to get its value, size, and
-     * TTL info simultaneously. Like {@link LRUCache#dump}, but just for a
-     * single key. Always returns stale values, if their info is found in the
-     * cache, so be sure to check for expired TTLs if relevant.
+     * TTL info simultaneously. Returns `undefined` if the key is not present.
+     *
+     * Unlike {@link LRUCache#dump}, which is designed to be portable and survive
+     * serialization, the `start` value is always the current timestamp, and the
+     * `ttl` is a calculated remaining time to live (negative if expired).
+     *
+     * Always returns stale values, if their info is found in the cache, so be
+     * sure to check for expirations (ie, a negative {@link LRUCache.Entry#ttl})
+     * if relevant.
      */
     info(key) {
         const i = this.#keyMap.get(key);
@@ -361702,7 +363319,16 @@ class LRUCache {
     }
     /**
      * Return an array of [key, {@link LRUCache.Entry}] tuples which can be
-     * passed to cache.load()
+     * passed to {@link LRLUCache#load}.
+     *
+     * The `start` fields are calculated relative to a portable `Date.now()`
+     * timestamp, even if `performance.now()` is available.
+     *
+     * Stale entries are always included in the `dump`, even if
+     * {@link LRUCache.OptionsBase.allowStale} is false.
+     *
+     * Note: this returns an actual array, not a generator, so it can be more
+     * easily passed around.
      */
     dump() {
         const arr = [];
@@ -361731,8 +363357,12 @@ class LRUCache {
     }
     /**
      * Reset the cache and load in the items in entries in the order listed.
-     * Note that the shape of the resulting cache may be different if the
-     * same options are not used in both caches.
+     *
+     * The shape of the resulting cache may be different if the same options are
+     * not used in both caches.
+     *
+     * The `start` fields are assumed to be calculated relative to a portable
+     * `Date.now()` timestamp, even if `performance.now()` is available.
      */
     load(arr) {
         this.clear();
@@ -361755,6 +363385,30 @@ class LRUCache {
      *
      * Note: if `undefined` is specified as a value, this is an alias for
      * {@link LRUCache#delete}
+     *
+     * Fields on the {@link LRUCache.SetOptions} options param will override
+     * their corresponding values in the constructor options for the scope
+     * of this single `set()` operation.
+     *
+     * If `start` is provided, then that will set the effective start
+     * time for the TTL calculation. Note that this must be a previous
+     * value of `performance.now()` if supported, or a previous value of
+     * `Date.now()` if not.
+     *
+     * Options object may also include `size`, which will prevent
+     * calling the `sizeCalculation` function and just use the specified
+     * number if it is a positive integer, and `noDisposeOnSet` which
+     * will prevent calling a `dispose` function in the case of
+     * overwrites.
+     *
+     * If the `size` (or return value of `sizeCalculation`) for a given
+     * entry is greater than `maxEntrySize`, then the item will not be
+     * added to the cache.
+     *
+     * Will update the recency of the entry.
+     *
+     * If the value is `undefined`, then this is an alias for
+     * `cache.delete(key)`. `undefined` is never stored in the cache.
      */
     set(k, v, setOptions = {}) {
         if (v === undefined) {
@@ -361772,7 +363426,7 @@ class LRUCache {
                 status.maxEntrySizeExceeded = true;
             }
             // have to delete, in case something is there already.
-            this.delete(k);
+            this.#delete(k, 'set');
             return this;
         }
         let index = this.#size === 0 ? undefined : this.#keyMap.get(k);
@@ -361924,6 +363578,14 @@ class LRUCache {
      * Will return false if the item is stale, even though it is technically
      * in the cache.
      *
+     * Check if a key is in the cache, without updating the recency of
+     * use. Age is updated if {@link LRUCache.OptionsBase.updateAgeOnHas} is set
+     * to `true` in either the options or the constructor.
+     *
+     * Will return `false` if the item is stale, even though it is technically in
+     * the cache. The difference can be determined (if it matters) by using a
+     * `status` argument, and inspecting the `has` field.
+     *
      * Will not update item age unless
      * {@link LRUCache.OptionsBase.updateAgeOnHas} is set.
      */
@@ -362015,7 +363677,7 @@ class LRUCache {
                         this.#valList[index] = bf.__staleWhileFetching;
                     }
                     else {
-                        this.delete(k);
+                        this.#delete(k, 'fetch');
                     }
                 }
                 else {
@@ -362044,7 +363706,7 @@ class LRUCache {
                 // the stale value is not removed from the cache when the fetch fails.
                 const del = !noDelete || bf.__staleWhileFetching === undefined;
                 if (del) {
-                    this.delete(k);
+                    this.#delete(k, 'fetch');
                 }
                 else if (!allowStaleAborted) {
                     // still replace the *promise* with the stale value,
@@ -362190,6 +363852,28 @@ class LRUCache {
             return staleVal ? p.__staleWhileFetching : (p.__returned = p);
         }
     }
+    async forceFetch(k, fetchOptions = {}) {
+        const v = await this.fetch(k, fetchOptions);
+        if (v === undefined)
+            throw new Error('fetch() returned undefined');
+        return v;
+    }
+    memo(k, memoOptions = {}) {
+        const memoMethod = this.#memoMethod;
+        if (!memoMethod) {
+            throw new Error('no memoMethod provided to constructor');
+        }
+        const { context, forceRefresh, ...options } = memoOptions;
+        const v = this.get(k, options);
+        if (!forceRefresh && v !== undefined)
+            return v;
+        const vv = memoMethod(k, v, {
+            options,
+            context,
+        });
+        this.set(k, vv, options);
+        return vv;
+    }
     /**
      * Return a value from the cache. Will update the recency of the cache
      * entry found.
@@ -362210,7 +363894,7 @@ class LRUCache {
                 // delete only if not an in-flight background fetch
                 if (!fetching) {
                     if (!noDeleteOnStaleGet) {
-                        this.delete(k);
+                        this.#delete(k, 'expire');
                     }
                     if (status && allowStale)
                         status.returnedStale = true;
@@ -362273,16 +363957,20 @@ class LRUCache {
     }
     /**
      * Deletes a key out of the cache.
+     *
      * Returns true if the key was deleted, false otherwise.
      */
     delete(k) {
+        return this.#delete(k, 'delete');
+    }
+    #delete(k, reason) {
         let deleted = false;
         if (this.#size !== 0) {
             const index = this.#keyMap.get(k);
             if (index !== undefined) {
                 deleted = true;
                 if (this.#size === 1) {
-                    this.clear();
+                    this.#clear(reason);
                 }
                 else {
                     this.#removeItemSize(index);
@@ -362292,10 +363980,10 @@ class LRUCache {
                     }
                     else if (this.#hasDispose || this.#hasDisposeAfter) {
                         if (this.#hasDispose) {
-                            this.#dispose?.(v, k, 'delete');
+                            this.#dispose?.(v, k, reason);
                         }
                         if (this.#hasDisposeAfter) {
-                            this.#disposed?.push([v, k, 'delete']);
+                            this.#disposed?.push([v, k, reason]);
                         }
                     }
                     this.#keyMap.delete(k);
@@ -362331,6 +364019,9 @@ class LRUCache {
      * Clear the cache entirely, throwing away all values.
      */
     clear() {
+        return this.#clear('delete');
+    }
+    #clear(reason) {
         for (const index of this.#rindexes({ allowStale: true })) {
             const v = this.#valList[index];
             if (this.#isBackgroundFetch(v)) {
@@ -362339,10 +364030,10 @@ class LRUCache {
             else {
                 const k = this.#keyList[index];
                 if (this.#hasDispose) {
-                    this.#dispose?.(v, k, 'delete');
+                    this.#dispose?.(v, k, reason);
                 }
                 if (this.#hasDisposeAfter) {
-                    this.#disposed?.push([v, k, 'delete']);
+                    this.#disposed?.push([v, k, reason]);
                 }
             }
         }
@@ -363312,7 +365003,7 @@ __webpack_unused_export__ = setVerbosity;
 /***/ ((module) => {
 
 "use strict";
-module.exports = {"rE":"1.14.4"};
+module.exports = {"rE":"1.14.6"};
 
 /***/ }),
 
@@ -381895,7 +383586,7 @@ const Void = (/* unused pure expression or super */ null && (Unknown));
 
 
 ;// CONCATENATED MODULE: ./node_modules/js-yaml/dist/js-yaml.mjs
-/*! js-yaml 5.4.1 https://github.com/nodeca/js-yaml @license MIT */
+/*! js-yaml 5.5.0 https://github.com/nodeca/js-yaml @license MIT */
 //#region src/tag.ts
 /**
 * Returned by a scalar resolver when the source does not match its tag.
@@ -382721,10 +384412,8 @@ var Schema = class Schema {
 					if (tag.matchByTagPrefix) prefix.sequence.push(tag);
 					else exact.sequence[tag.tagName] = tag;
 					break;
-				case "mapping":
-					if (tag.matchByTagPrefix) prefix.mapping.push(tag);
-					else exact.mapping[tag.tagName] = tag;
-					break;
+				case "mapping": if (tag.matchByTagPrefix) prefix.mapping.push(tag);
+				else exact.mapping[tag.tagName] = tag;
 			}
 		}
 		const implicitScalarAnyFirstChar = implicitScalarTags.filter((tag) => tag.implicitFirstChars === null);
@@ -383312,16 +385001,17 @@ function getBlockValue(input, start, end, indent, chomping, folded) {
 		}
 		const content = line.slice(textIndent);
 		const first = content.charCodeAt(0);
-		if (folded) if (first === 32 || first === 9) {
-			atMoreIndented = true;
-			result += "\n".repeat(didReadContent ? 1 + emptyLines : emptyLines);
-		} else if (atMoreIndented) {
-			atMoreIndented = false;
-			result += "\n".repeat(emptyLines + 1);
-		} else if (emptyLines === 0) {
-			if (didReadContent) result += " ";
-		} else result += "\n".repeat(emptyLines);
-		else result += "\n".repeat(didReadContent ? 1 + emptyLines : emptyLines);
+		if (folded) {
+			if (first === 32 || first === 9) {
+				atMoreIndented = true;
+				result += "\n".repeat(didReadContent ? 1 + emptyLines : emptyLines);
+			} else if (atMoreIndented) {
+				atMoreIndented = false;
+				result += "\n".repeat(emptyLines + 1);
+			} else if (emptyLines === 0) {
+				if (didReadContent) result += " ";
+			} else result += "\n".repeat(emptyLines);
+		} else result += "\n".repeat(didReadContent ? 1 + emptyLines : emptyLines);
 		result += content;
 		didReadContent = true;
 		emptyLines = 0;
@@ -383355,24 +385045,69 @@ var DEFAULT_TAG_HANDLERS = Object.assign(Object.create(null), {
 	"!": "!",
 	"!!": "tag:yaml.org,2002:"
 });
-function tagPercentEncode(source) {
-	return encodeURI(source).replace(/!/g, "%21");
+var TAG_SUFFIX_CHARS = "-#;/?:@&=+$_.~*'()";
+var TAG_URI_CHARS = TAG_SUFFIX_CHARS + "!,[]";
+var HEX = "0123456789ABCDEF";
+function percentByte(byte) {
+	return "%" + HEX[byte >> 4] + HEX[byte & 15];
+}
+function tagPercentEncode(source, isSuffix) {
+	const allowed = isSuffix ? TAG_SUFFIX_CHARS : TAG_URI_CHARS;
+	let result = "";
+	for (let index = 0; index < source.length; index++) {
+		let ch = source.charCodeAt(index);
+		if (ch >= 48 && ch <= 57 || ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || allowed.includes(source[index])) {
+			result += source[index];
+			continue;
+		}
+		if (ch >= 55296 && ch <= 56319) ch = 65536 + ((ch & 1023) << 10) + (source.charCodeAt(++index) & 1023);
+		if (ch < 128) result += percentByte(ch);
+		else if (ch < 2048) result += percentByte(192 | ch >> 6) + percentByte(128 | ch & 63);
+		else if (ch < 65536) result += percentByte(224 | ch >> 12) + percentByte(128 | ch >> 6 & 63) + percentByte(128 | ch & 63);
+		else result += percentByte(240 | ch >> 18) + percentByte(128 | ch >> 12 & 63) + percentByte(128 | ch >> 6 & 63) + percentByte(128 | ch & 63);
+	}
+	return result;
+}
+function tagPercentDecode(source) {
+	let result = "";
+	let index = 0;
+	while (index < source.length) {
+		if (source.charCodeAt(index) !== 37) {
+			result += source[index++];
+			continue;
+		}
+		let ch = parseInt(source.slice(index + 1, index + 3), 16);
+		index += 3;
+		if (ch >= 192) {
+			let remaining = ch < 224 ? 1 : ch < 240 ? 2 : 3;
+			ch &= (1 << 6 - remaining) - 1;
+			while (remaining-- > 0) {
+				ch = ch << 6 | parseInt(source.slice(index + 1, index + 3), 16) & 63;
+				index += 3;
+			}
+		}
+		if (ch < 65536) result += String.fromCharCode(ch);
+		else {
+			ch -= 65536;
+			result += String.fromCharCode(55296 | ch >> 10, 56320 | ch & 1023);
+		}
+	}
+	return result;
 }
 function tagNameFull(rawTag, tagHandlers) {
-	if (rawTag.startsWith("!<") && rawTag.endsWith(">")) return decodeURIComponent(rawTag.slice(2, -1));
+	if (rawTag.startsWith("!<") && rawTag.endsWith(">")) return tagPercentDecode(rawTag.slice(2, -1));
 	const handleEnd = rawTag.indexOf("!", 1);
 	const handle = handleEnd === -1 ? "!" : rawTag.slice(0, handleEnd + 1);
-	const prefix = tagHandlers?.[handle] ?? DEFAULT_TAG_HANDLERS[handle] ?? handle;
-	return decodeURIComponent(prefix) + decodeURIComponent(rawTag.slice(handle.length));
+	return tagPercentDecode(tagHandlers?.[handle] ?? DEFAULT_TAG_HANDLERS[handle] ?? handle) + tagPercentDecode(rawTag.slice(handle.length));
 }
 function tagNameShort(fullTag) {
 	let tag = fullTag;
 	if (tag.charCodeAt(0) === 33) {
 		tag = tag.slice(1);
-		return `!${tagPercentEncode(tag)}`;
+		return `!${tagPercentEncode(tag, true)}`;
 	}
-	if (tag.slice(0, 18) === "tag:yaml.org,2002:") return `!!${tagPercentEncode(tag.slice(18))}`;
-	return `!<${tagPercentEncode(tag)}>`;
+	if (tag.slice(0, 18) === "tag:yaml.org,2002:") return `!!${tagPercentEncode(tag.slice(18), true)}`;
+	return `!<${tagPercentEncode(tag, false)}>`;
 }
 //#endregion
 //#region src/parser/constructor.ts
@@ -383845,7 +385580,11 @@ function skipUntilLineEnd(state) {
 	while (ch !== 0 && !isEol(ch)) ch = state.input.charCodeAt(++state.position);
 }
 function checkPrintable(state, start, end) {
-	if (PATTERN_NON_PRINTABLE.test(state.input.slice(start, end))) throwError(state, "the stream contains non-printable characters");
+	const match = PATTERN_NON_PRINTABLE.exec(state.input.slice(start, end));
+	if (match !== null) {
+		state.position = start + match.index + match[0].length - 1;
+		throwError(state, "the stream contains non-printable characters");
+	}
 }
 function readTagProperty(state, props, inFlow) {
 	if (state.input.charCodeAt(state.position) !== 33) return false;
@@ -383872,12 +385611,14 @@ function readTagProperty(state, props, inFlow) {
 		state.position++;
 	} else {
 		while (ch !== 0 && !isWsOrEol(ch) && !(inFlow && isFlowIndicator(ch))) {
-			if (ch === 33) if (!isNamed) {
-				tagHandle = state.input.slice(suffixStart - 1, state.position + 1);
-				if (!PATTERN_TAG_HANDLE.test(tagHandle)) throwError(state, "named tag handle cannot contain such characters");
-				isNamed = true;
-				suffixStart = state.position + 1;
-			} else throwError(state, "tag suffix cannot contain exclamation marks");
+			if (ch === 33) {
+				if (!isNamed) {
+					tagHandle = state.input.slice(suffixStart - 1, state.position + 1);
+					if (!PATTERN_TAG_HANDLE.test(tagHandle)) throwError(state, "named tag handle cannot contain such characters");
+					isNamed = true;
+					suffixStart = state.position + 1;
+				} else throwError(state, "tag suffix cannot contain exclamation marks");
+			}
 			ch = state.input.charCodeAt(++state.position);
 		}
 		tagName = state.input.slice(suffixStart, state.position);
@@ -384030,7 +385771,7 @@ function readBlockScalar(state, parentIndent, props) {
 				state.position = linePosition + column;
 				throwError(state, "tab characters must not be used in indentation");
 			}
-			if (column < maxLeadingIndent) {
+			if (column >= parentIndent && column < maxLeadingIndent) {
 				state.position = linePosition + column;
 				throwError(state, "bad indentation of a mapping entry");
 			}
@@ -384061,7 +385802,7 @@ function readBlockScalar(state, parentIndent, props) {
 function canStartPlainScalar(state, nodeContext) {
 	const ch = state.input.charCodeAt(state.position);
 	const inFlow = nodeContext === CONTEXT_FLOW_IN;
-	if (ch === 0 || isWsOrEol(ch) || ch === 35 || ch === 38 || ch === 42 || ch === 33 || ch === 124 || ch === 62 || ch === 39 || ch === 34 || ch === 37 || ch === 64 || ch === 96 || inFlow && isFlowIndicator(ch)) return false;
+	if (ch === 0 || isWsOrEol(ch) || ch === 35 || ch === 38 || ch === 42 || ch === 33 || ch === 124 || ch === 62 || ch === 39 || ch === 34 || ch === 37 || ch === 64 || ch === 96 || isFlowIndicator(ch)) return false;
 	if (ch === 63 || ch === 45) {
 		const following = state.input.charCodeAt(state.position + 1);
 		if (isWsOrEolOrEnd(following) || inFlow && isFlowIndicator(following)) return false;
@@ -384240,13 +385981,16 @@ function readBlockMapping(state, nodeIndent, flowIndent, props) {
 					ch = state.input.charCodeAt(++state.position);
 					if (!isWsOrEolOrEnd(ch)) throwError(state, "a whitespace character is expected after the key-value separator within a block mapping");
 					if (!mappingOpened) {
-						restoreState(state, beforeKey);
-						addMappingEvent(state, beforeKey.position, props.anchorStart, props.anchorEnd, props.tagStart, props.tagEnd, COLLECTION_STYLE.BLOCK);
+						state.events.splice(beforeKey.eventsLength, 0, {
+							type: EVENT_ID.MAPPING,
+							start: beforeKey.position,
+							anchorStart: props.anchorStart,
+							anchorEnd: props.anchorEnd,
+							tagStart: props.tagStart,
+							tagEnd: props.tagEnd,
+							style: COLLECTION_STYLE.BLOCK
+						});
 						mappingOpened = true;
-						parseNode(state, flowIndent, CONTEXT_FLOW_OUT, false, true);
-						ch = state.input.charCodeAt(state.position);
-						while (isWhiteSpace(ch)) ch = state.input.charCodeAt(++state.position);
-						state.position++;
 					}
 					detected = true;
 					atExplicitKey = false;
@@ -384330,19 +386074,20 @@ function parseNode(state, parentIndent, nodeContext, allowToSeek, allowCompact, 
 	if (indentStatus === 1 || nodeContext === CONTEXT_BLOCK_OUT) {
 		const flowIndent = nodeContext === CONTEXT_FLOW_IN || nodeContext === CONTEXT_FLOW_OUT ? parentIndent : parentIndent + 1;
 		const blockIndent = state.position - state.lineStart;
-		if (indentStatus === 1) if (allowBlockCollections && (readBlockSequence(state, blockIndent, props) || readBlockMapping(state, blockIndent, flowIndent, props)) || readFlowCollection(state, flowIndent, props)) hasContent = true;
-		else {
-			const ch = state.input.charCodeAt(state.position);
-			if (propertyStart !== null && allowPropertyMapping && allowBlockStyles && !allowBlockCollections && ch !== 124 && ch !== 62) {
-				const fallbackState = snapshotState(state);
-				const propertyIndent = propertyStart.position - propertyStart.lineStart;
-				restoreState(state, propertyStart);
-				if (readBlockMapping(state, propertyIndent, flowIndent, emptyProperties()) && state.events[fallbackState.eventsLength]?.type === EVENT_ID.MAPPING) hasContent = true;
-				else restoreState(state, fallbackState);
+		if (indentStatus === 1) {
+			if (allowBlockCollections && (readBlockSequence(state, blockIndent, props) || readBlockMapping(state, blockIndent, flowIndent, props)) || readFlowCollection(state, flowIndent, props)) hasContent = true;
+			else {
+				const ch = state.input.charCodeAt(state.position);
+				if (propertyStart !== null && allowPropertyMapping && allowBlockStyles && !allowBlockCollections && ch !== 124 && ch !== 62) {
+					const fallbackState = snapshotState(state);
+					const propertyIndent = propertyStart.position - propertyStart.lineStart;
+					restoreState(state, propertyStart);
+					if (readBlockMapping(state, propertyIndent, flowIndent, emptyProperties()) && state.events[fallbackState.eventsLength]?.type === EVENT_ID.MAPPING) hasContent = true;
+					else restoreState(state, fallbackState);
+				}
+				if (!hasContent && (allowBlockScalars && readBlockScalar(state, flowIndent, props) || readSingleQuotedScalar(state, flowIndent, props) || readDoubleQuotedScalar(state, flowIndent, props) || readAlias(state, props) || readPlainScalar(state, flowIndent, nodeContext, props))) hasContent = true;
 			}
-			if (!hasContent && (allowBlockScalars && readBlockScalar(state, flowIndent, props) || readSingleQuotedScalar(state, flowIndent, props) || readDoubleQuotedScalar(state, flowIndent, props) || readAlias(state, props) || readPlainScalar(state, flowIndent, nodeContext, props))) hasContent = true;
-		}
-		else if (indentStatus === 0) hasContent = allowBlockCollections && readBlockSequence(state, blockIndent, props);
+		} else if (indentStatus === 0) hasContent = allowBlockCollections && readBlockSequence(state, blockIndent, props);
 	}
 	allowBlockScalars = allowBlockScalars && !hasContent;
 	if (!hasContent && (props.anchorStart !== NO_RANGE$1 || props.tagStart !== NO_RANGE$1 || allowBlockScalars)) {
@@ -384689,20 +386434,18 @@ function visitNode(node, visitor, ctx) {
 				isKey: false
 			})) return true;
 			break;
-		case "mapping":
-			for (const { key, value } of node.items) {
-				if (visitNode(key, visitor, {
-					depth,
-					parent: node,
-					isKey: true
-				})) return true;
-				if (visitNode(value, visitor, {
-					depth,
-					parent: node,
-					isKey: false
-				})) return true;
-			}
-			break;
+		case "mapping": for (const { key, value } of node.items) {
+			if (visitNode(key, visitor, {
+				depth,
+				parent: node,
+				isKey: true
+			})) return true;
+			if (visitNode(value, visitor, {
+				depth,
+				parent: node,
+				isKey: false
+			})) return true;
+		}
 	}
 	return false;
 }
@@ -384757,6 +386500,7 @@ function doubleQuoteWhitespaceOnly(layout) {
 function applyForceQuotesOption(layout) {
 	if (!layout.presenterOptions.forceQuotes) return;
 	if (layout.isKey || layout.style !== SCALAR_STYLE.PLAIN) return;
+	if (layout.node.tag !== layout.presenterOptions.schema.defaultScalarTag.tagName) return;
 	layout.style = layout.node.value.includes("\n") ? SCALAR_STYLE.DOUBLE_QUOTED : _preferredQuotedStyle(layout);
 }
 function tryLongOrMultilineAsBlock(layout) {
@@ -385133,8 +386877,10 @@ function writeBlockMapping(state, level, node, compact) {
 		const keyHasLineBreak = key.kind === "scalar" && key.value.indexOf("\n") !== -1;
 		const keyIsTooLong = keyText.length > 1024 && /^[\s\S]{1025}/u.test(keyText);
 		const explicitPair = keyIsBlock || keyHasLineBreak || keyIsTooLong;
-		if (explicitPair) if (keyText && CHAR_LINE_FEED === keyText.charCodeAt(0)) pairBuffer += "?";
-		else pairBuffer += "? ";
+		if (explicitPair) {
+			if (keyText && CHAR_LINE_FEED === keyText.charCodeAt(0)) pairBuffer += "?";
+			else pairBuffer += "? ";
+		}
 		pairBuffer += keyText;
 		if (explicitPair) pairBuffer += generateNextLine(state, level);
 		const valueText = writeNode(state, level + 1, value, node, {
@@ -385170,12 +386916,15 @@ function writeNode(state, level, node, parent, ctx) {
 	let body;
 	let shouldPrintTag = node.tagged;
 	const useBlockCollection = block && (node.kind === "mapping" || node.kind === "sequence") && node.style === COLLECTION_STYLE.BLOCK && node.items.length !== 0;
-	if (node.kind === "mapping") if (useBlockCollection) body = writeBlockMapping(state, level, node, compact);
-	else body = writeFlowMapping(state, level, node);
-	else if (node.kind === "sequence") if (useBlockCollection) if (state.seqNoIndent && !isblockseq && level > 0) body = writeBlockSequence(state, level - 1, node, compact);
-	else body = writeBlockSequence(state, level, node, compact);
-	else body = writeFlowSequence(state, level, node);
-	else {
+	if (node.kind === "mapping") {
+		if (useBlockCollection) body = writeBlockMapping(state, level, node, compact);
+		else body = writeFlowMapping(state, level, node);
+	} else if (node.kind === "sequence") {
+		if (useBlockCollection) {
+			if (state.seqNoIndent && !isblockseq && level > 0) body = writeBlockSequence(state, level - 1, node, compact);
+			else body = writeBlockSequence(state, level, node, compact);
+		} else body = writeFlowSequence(state, level, node);
+	} else {
 		const layout = scalarLayout(state, node, parent, level, iskey, !block);
 		detectAllowedStyles(layout);
 		for (const rule of state.scalarStyleRules) rule(layout);
