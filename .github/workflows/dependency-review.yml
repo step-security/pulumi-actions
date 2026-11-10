@@ -26,6 +26,20 @@ jobs:
       - name: 'Dependency Review'
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
-          # @opentelemetry/propagator-jaeger 1.7.0: only reached via @pulumi/pulumi's
-          # tracing SDK, not bundled in dist/index.js (see osv-scanner.toml).
-          allow-ghsas: GHSA-45rx-2jwx-cxfr
+          # Mirrors the ignores in osv-scanner.toml: each is either not bundled into
+          # dist/index.js (dev tooling or @pulumi/pulumi tracing) or its vulnerable
+          # code path is never called. See the reasons there.
+          allow-ghsas: >-
+            GHSA-8988-4f7v-96qf,
+            GHSA-45rx-2jwx-cxfr,
+            GHSA-vpq2-c234-7xj6,
+            GHSA-grv7-fg5c-xmjg,
+            GHSA-952p-6rrq-rcjv,
+            GHSA-qr28-fpjm-wq7f,
+            GHSA-vcc3-ghjq-m6fr,
+            GHSA-gcqx-w48m-w2h4,
+            GHSA-5w9c-rv96-fr7g,
+            GHSA-3g3m-2fjr-6pw4,
+            GHSA-g3hv-75wg-m249,
+            GHSA-w5hq-g745-h8pq,
+            GHSA-h5c3-5r3r-rr8q
