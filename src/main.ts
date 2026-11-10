@@ -6,11 +6,8 @@ import {
   LocalProgramArgs,
   LocalWorkspace,
   LocalWorkspaceOptions,
-  OutputMap,
-  Stack,
 } from '@pulumi/pulumi/automation';
-import axios, {isAxiosError} from 'axios'
-import { invariant } from 'ts-invariant';
+import invariant from 'ts-invariant';
 import {
   Commands,
   Config,
@@ -21,8 +18,8 @@ import {
 import { environmentVariables } from './libs/envs';
 import { handlePullRequestMessage } from './libs/pr';
 import * as pulumiCli from './libs/pulumi-cli';
-import { handleSummaryMessage } from './libs/summary';
 import { login } from './login';
+import axios, {isAxiosError} from 'axios'
 
 async function validateSubscription() {
   const eventPath = process.env.GITHUB_EVENT_PATH
@@ -64,10 +61,8 @@ async function validateSubscription() {
   }
 }
 
-
 const main = async () => {
   await validateSubscription();
-
   const downloadConfig = makeInstallationConfig();
   if (downloadConfig.success) {
     await installOnly(downloadConfig.value);
@@ -77,7 +72,7 @@ const main = async () => {
 
   // If we get here, we're not in install-only mode.
   // Attempt to parse the full configuration and run the action.
-  const config = makeConfig();
+  const config = await makeConfig();
   core.debug('Configuration is loaded');
   runAction(config);
 };
@@ -90,6 +85,7 @@ const installOnly = async (config: InstallationConfig): Promise<void> => {
 
 const runAction = async (config: Config): Promise<void> => {
   await pulumiCli.downloadCli(config.pulumiVersion);
+  await login(config.cloudUrl, environmentVariables.PULUMI_ACCESS_TOKEN);
 
   const workDir = resolve(
     environmentVariables.GITHUB_WORKSPACE,
@@ -97,96 +93,63 @@ const runAction = async (config: Config): Promise<void> => {
   );
   core.debug(`Working directory resolved at ${workDir}`);
 
-  const result = await login(workDir, config.cloudUrl);
-  if (!result.success) {
-    core.warning(`Failed to login to Pulumi service: ${result.stderr}`);
-  }
+  const stackArgs: LocalProgramArgs = {
+    stackName: config.stackName,
+    workDir: workDir,
+  };
 
-  const wsOpts: LocalWorkspaceOptions = {};
+  const stackOpts: LocalWorkspaceOptions = {};
   if (config.secretsProvider != '') {
-    wsOpts.secretsProvider = config.secretsProvider;
+    stackOpts.secretsProvider = config.secretsProvider;
   }
 
-  // Only initialize `stack` when the command is not `output`.
-  // When the command is `output` we want to avoid the underlying call to `pulumi stack select`,
-  // which requires a Pulumi.yaml file to be present.
-  let stack: Stack | undefined;
-  if (config.command !== "output") {
-    const stackArgs: LocalProgramArgs = {
-      stackName: config.stackName,
-      workDir: workDir,
-    };
+  const stack = await (config.upsert
+    ? LocalWorkspace.createOrSelectStack(stackArgs, stackOpts)
+    : LocalWorkspace.selectStack(stackArgs, stackOpts));
 
-    stack = await (config.upsert
-      ? LocalWorkspace.createOrSelectStack(stackArgs, wsOpts)
-      : LocalWorkspace.selectStack(stackArgs, wsOpts));
-  }
-
-  // Only initialize `projectName` when we have an instance of `stack` to operate on,
-  // for commands other than `output`.
-  let projectName: string | undefined;
-  if (stack) {
-    const projectSettings = await stack.workspace.projectSettings();
-    projectName = projectSettings.name;
-  }
+  const projectSettings = await stack.workspace.projectSettings();
+  const projectName = projectSettings.name;
 
   const onOutput = (msg: string) => {
     core.debug(msg);
     core.info(msg);
   };
 
-  // If we have an instance of `stack` and `configMap` is set, set all the config values.
-  // `stack` is only initialized when the command is not `output`.
-  if (stack && config.configMap) {
+  if (config.configMap) {
     await stack.setAllConfig(config.configMap);
   }
 
+  if (config.refresh) {
+    core.startGroup(`Refresh stack on ${config.stackName}`);
+    await stack.refresh({ onOutput });
+    core.endGroup();
+  }
 
   core.startGroup(`pulumi ${config.command} on ${config.stackName}`);
 
-  const actions: Record<Commands, () => Promise<[string, string]>> = {
-    up: () => stack.up({ onOutput, ...config.options }).then((r) => [r.stdout, r.stderr]),
+  const actions: Record<Commands, () => Promise<string>> = {
+    up: () => stack.up({ onOutput, ...config.options }).then((r) => r.stdout),
     update: () =>
-      stack.up({ onOutput, ...config.options }).then((r) => [r.stdout, r.stderr]),
+      stack.up({ onOutput, ...config.options }).then((r) => r.stdout),
     refresh: () =>
-      stack.refresh({ onOutput, ...config.options }).then((r) => [r.stdout, r.stderr]),
+      stack.refresh({ onOutput, ...config.options }).then((r) => r.stdout),
     destroy: () =>
-      stack.destroy({ onOutput, ...config.options }).then((r) => [r.stdout, r.stderr]),
+      stack.destroy({ onOutput, ...config.options }).then((r) => r.stdout),
     preview: async () => {
       const { stdout, stderr } = await stack.preview(config.options);
       onOutput(stdout);
       onOutput(stderr);
-      return [stdout, stderr];
+      return stdout;
     },
-    output: () => Promise.resolve(['', '']) //do nothing, outputs are fetched anyway afterwards
   };
 
   core.debug(`Running action ${config.command}`);
-  const [stdout, stderr] = await actions[config.command]();
+  const output = await actions[config.command]();
   core.debug(`Done running action ${config.command}`);
-  if (stderr !== '') {
-    if (config.options.logToStdErr) {
-      core.info(stderr);
-    } else {
-      core.warning(stderr);
-    }
-  }
 
-  core.setOutput('output', stdout);
+  core.setOutput('output', output);
 
-  let outputs: OutputMap;
-  if (config.command === "output") {
-    // When the command is `output` we didn't initialize `stack`, because we
-    // wanted to avoid the underlying call to `pulumi stack select`, which
-    // requires a Pulumi.yaml file to be present. Instead, we can use the
-    // `LocalWorkspace.stackOutputs()` to get the stack's outputs.
-    const ws = await LocalWorkspace.create({ ...wsOpts, workDir });
-    outputs = await ws.stackOutputs(config.stackName);
-  } else {
-    // When the command is not `output`, we already have a `stack` instance
-    // initialized, so `stack.outputs()` can be used to get the stack's outputs.
-    outputs = await stack.outputs();
-  }
+  const outputs = await stack.outputs();
 
   for (const [outKey, outExport] of Object.entries(outputs)) {
     core.setOutput(outKey, outExport.value);
@@ -195,19 +158,20 @@ const runAction = async (config: Config): Promise<void> => {
     }
   }
 
-  // Only comment on the pull request if the command is not `output`.
-  if (config.command !== "output") {
+  if (config.commentOnPrNumber || config.commentOnPr) {
     const isPullRequest = context.payload.pull_request !== undefined;
-    if (config.commentOnPrNumber ||
-      (config.commentOnPr && isPullRequest)) {
+    if (isPullRequest) {
       core.debug(`Commenting on pull request`);
       invariant(config.githubToken, 'github-token is missing.');
-      handlePullRequestMessage(config, projectName, stdout);
+      handlePullRequestMessage(config, projectName, output);
     }
+  }
 
-    if (config.commentOnSummary) {
-      handleSummaryMessage(config, projectName, stdout)
-    }
+  if (config.commentOnSummary) {
+    await core.summary
+      .addHeading(`Pulumi ${config.stackName} results`)
+      .addCodeBlock(output, "diff")
+      .write();
   }
 
   if (config.remove && config.command === 'destroy') {

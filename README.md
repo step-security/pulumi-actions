@@ -15,14 +15,14 @@ name: Pulumi
 on:
   push:
     branches:
-      - main
+      - master
 jobs:
   up:
     name: Preview
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: step-security/pulumi-actions@v7
+      - uses: step-security/pulumi-actions@v4
         with:
           command: preview
           stack-name: org-name/stack-name
@@ -37,8 +37,8 @@ This will check out the existing directory and run `pulumi preview`.
 The action can be configured with the following arguments:
 
 - `command` (optional) - The command to run as part of the action. Accepted
-  values are `up` (alias: update), `refresh`, `destroy`, `preview` and `output`.
-  If unspecified, the action will stop after installing Pulumi.
+  values are `up` (alias: update), `refresh`, `destroy`, and `preview`. If
+  unspecified, the action will stop after installing Pulumi.
 
 - `stack-name` (optional) - The name of the stack that Pulumi will be operating
   on. Use the fully quaified org-name/stack-name when operating on a stack
@@ -62,8 +62,8 @@ The action can be configured with the following arguments:
 - `github-token` - (optional) A GitHub token that has access levels to allow the
   Action to comment on a PR. Defaults to `${{ github.token }}`
 
-- `refresh` - (optional) If `true`, `preview` and `up` commands are called with
-  the `--refresh` flag.
+- `refresh` - (optional) If `true`, stack is refreshed before running the
+  `command`.
 
 - `secrets-provider` - (optional) The type of the provider that should be used
   to encrypt and decrypt secrets. Possible choices: `default`, `passphrase`,
@@ -72,14 +72,6 @@ The action can be configured with the following arguments:
 
 - `color` - (optional) Colorize output. Choices are: always, never, raw, auto
   (default "auto").
-
-- `log-verbosity` - (optional) Enable verbose logging (1-11; >3 is very
-  verbose).
-
-- `log-flow` - (optional) Flow log settings to child processes (like plugins).
-
-- `debug` - (optional) Print detailed debugging output during resource
-  operations.
 
 ### Extra options
 
@@ -106,24 +98,14 @@ The action can be configured with the following arguments:
 - `parallel` - (optional) Allow P resource operations to run in parallel at once
   (1 for no parallelism). Defaults to unbounded.
 
-- `policyPacks` - (optional) Run one or more policy packs with the provided
-  `command`. Multiple values can be specified one per line (example:
-  `<value | string>,...`).
+- `policy-pack` - (optional) Run one or more policy packs with the provided
+  `command`
 
-- `policyPackConfigs` - (optional) Path(s) to JSON file(s) containing the config
-  for the policy pack with the corresponding "policy-pack" argument. Multiple
-  values can be specified one per line (example: `<value | string>,...`).
+- `policy-pack-config` - (optional) Path(s) to JSON file(s) containing the
+  config for the policy pack with the corresponding "policy-pack" argument
 
 - `pulumi-version` - (optional) Install a specific version of the Pulumi CLI.
-  Defaults to "^3". Specifying a version range will ensure a version within that
-  range is installed. Use "latest" to fetch the latest published release or
-  "dev" to download the latest development pre-release. You can also use
-  `pr#<number>` to download artifacts from a specific pull request in
-  pulumi/pulumi.
-
-- `pulumi-version-file` - (optional) File containing the version of the Pulumi
-  CLI to install. Example: .pulumi.version. Only one `pulumi-version` or
-  `pulumi-version-file` should be provided.
+  Defaults to "^3"
 
 - `remove` - (optional) Removes the target stack if all resources are destroyed.
   Used only with `destroy` command.
@@ -147,31 +129,13 @@ The action can be configured with the following arguments:
 - `exclude-protected` - (optional) Skip destroying protected resources. Only
   valid when `command` is `destroy`.
 
-- `suppress-outputs` - (optional) Suppress display of stack outputs (in case
-  they contain sensitive values).
-
-- `suppress-progress` - (optional) Suppress display of periodic progress dots to
-  limit logs length.
-
 - `plan` - (optional) Used for
   [update plans](https://www.pulumi.com/docs/concepts/update-plans/)
-
   - On `preview`: Where to save the update plan. If you choose to use this in a
     different run of your workflow (let's say you create an update plan via a
     preview on Pull Request creation and want to `up` using the plan) you must
     upload the plan as an artifact, and retrieve it wherever you run `up`
   - On `up`: Where to read the update plan from.
-
-- `always-include-summary` - (optional) If `true`, then the action will trim
-  long pr comments from the front instead of the back. This ensures that the
-  resources summary is always included in the comment.
-
-- `continue-on-error` - (optional) If `true`, then the action will continue
-  running even if an error occurs.
-
-- `run-program` - (optional) Run the Pulumi program before refreshing or
-  destroying resources. Only valid for refresh, destroy, preview (with
-  `refresh`), and up/update (with `refresh`) commands.
 
 By default, this action will try to authenticate Pulumi with
 [Pulumi Cloud](https://app.pulumi.com/). If you have not specified a
@@ -184,7 +148,7 @@ If you want to only install the Pulumi CLI, omit the `command` field of the
 action.
 
 ```yaml
-- uses: step-security/pulumi-actions@v7
+- uses: step-security/pulumi-actions@v4
 ```
 
 This will install Pulumi and exit without performing any other operations.
@@ -218,7 +182,7 @@ We can see that `pet-name` is an output. To get the value of this output in the
 action, we would use code similar to the following:
 
 ```yaml
-- uses: step-security/pulumi-actions@v7
+- uses: step-security/pulumi-actions@v4
   id: pulumi
   env:
     PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
@@ -263,7 +227,7 @@ the correct GitHub Marketplace actions that support it.
 ```yaml
 - uses: actions/setup-node@v7
 with:
-  node-version: 14.x
+  node-version: 24.x
 ```
 
 - The action will no longer run

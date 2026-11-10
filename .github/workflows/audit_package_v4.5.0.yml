@@ -11,6 +11,10 @@ on:
         description: "Specify a base branch"
         required: false
         default: "main"
+      node_version:
+        description: "Node.js version to use"
+        required: false
+        default: "24"
       script:
         description: "Command used to build and bundle the action"
         required: false
@@ -32,9 +36,18 @@ jobs:
     with:
       force: ${{ inputs.force || false }}
       base_branch: ${{ inputs.base_branch || 'main' }}
+      node_version: ${{ inputs.node_version || '24' }}
       script: ${{ inputs.script || 'yarn build' }}
       package_manager: ${{ inputs.package_manager || 'yarn' }}
       yarn_version: ${{ inputs.yarn_version || '4.15.0' }}
+
+  audit-fix-v4.5.0:
+    if: github.event_name == 'schedule'
+    uses: step-security/reusable-workflows/.github/workflows/audit_fix.yml@v1
+    with:
+      force: false
+      base_branch: v4.5.0-main
+      working_directory: ${{ inputs.working_directory }}
 
 permissions:
   contents: write

@@ -14,9 +14,7 @@ inputs:
   pulumi-version:
     description: 'Install a specific version of the Pulumi CLI'
     required: false
-  pulumi-version-file:
-    description: 'File containing the version of the Pulumi CLI to install. Example: .pulumi.version'
-    required: false
+    default: '^3'
   work-dir:
     description: 'Location of your Pulumi files. Defaults to ./'
     required: false
@@ -62,13 +60,6 @@ inputs:
   replace:
     description: 'Specify resources to replace. Multiple resources can be specified one per line'
     required: false
-  exclude:
-    description: 'Specify a single resource URN to ignore. Multiple resources can be specified one per line'
-    required: false
-  exclude-dependents:
-    description: 'Allows ignoring of dependent targets discovered but not specified in exclude.'
-    required: false
-    default: 'false'
   target:
     description: 'Specify a single resource URN to update. Other resources will not be updated. Multiple resources can be specified one per line'
     required: false
@@ -83,7 +74,7 @@ inputs:
     description: 'Path to JSON file containing the config for the policy pack of the corresponding "--policy-pack" flag.'
     required: false
   refresh:
-    description: 'Execute the operation with the `--refresh` option'
+    description: 'Perform a stack refresh as part of the operation'
     required: false
     default: 'false'
   upsert:
@@ -109,39 +100,16 @@ inputs:
   plan:
     description: 'Where to either save an Update Plan or read an Update Plan from'
     required: false
-  suppress-outputs:
-    description: 'Suppress display of stack outputs (in case they contain sensitive values).'
-    required: false
-    default: 'false'
-  suppress-progress:
-    description: 'Suppress display of periodic progress dots to limit logs length'
-    required: false
-    default: 'false'
-  always-include-summary:
-    description: 'If comments must be trimmed, trim them from the front. This ensures the resources summary is always included in the comment'
-    required: false
-    default: 'false'
-  continue-on-error:
-    description: 'Continue running the update even if an error is encountered'
-    required: false
-    default: 'false'
-  log-verbosity:
-    description: 'Enable verbose logging (1-11; >3 is very verbose)'
-    required: false
-  log-flow:
-    description: 'Flow log settings to child processes (like plugins)'
-    required: false
-    default: 'false'
-  debug:
-    description: 'Print detailed debugging output during resource operations'
-    required: false
-    default: 'false'
-  run-program:
-    description: 'Run the Pulumi program before refreshing or destroying resources. Only valid for refresh, destroy, preview (with refresh), and up/update (with refresh) commands. If unset, the flag is not passed to the Pulumi CLI'
-    required: false
 outputs:
   output:
     description: Output from running command
 runs:
+  # TODO upgrade to node16 by 1 Nov 2022.
+  #
+  # We will retain node12 requirement 6 months after its EOL (30 Apr
+  # 2022), unless something forces us to upgrade.
+  #
+  # Trying to upgrade in July 2022 broke our users that depend on
+  # GitHub Enterprise versions < 3.4
   using: 'node24'
   main: 'dist/index.js'

@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - master
     paths-ignore:
       - 'CHANGELOG.md'
       - 'README.md'
@@ -14,18 +15,12 @@ jobs:
     name: Install and Build GHA
     runs-on: ubuntu-latest
     steps:
-      - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
         with:
-          egress-policy: audit
-
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 24.x
-
-      - run: corepack enable
+          node-version: 16.x
+          cache: yarn
 
       - run: yarn install
 
@@ -45,7 +40,7 @@ jobs:
         if:
           steps.changes.outputs.dist == 'true' || github.event_name ==
           'workflow_dispatch'
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist
@@ -65,15 +60,10 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
       fail-fast: false
     steps:
-      - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2
-        with:
-          egress-policy: audit
-
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7
 
       - name: Download dist artifact
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist
@@ -99,11 +89,6 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
       fail-fast: false
     steps:
-      - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2
-        with:
-          egress-policy: audit
-
       - name: Remove pre-installed Pulumi
         shell: bash
         env:
@@ -120,10 +105,10 @@ jobs:
             rm -v "$PULUMI_INSTALL_DIR"/pulumi*
           fi
 
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7
 
       - name: Download dist artifact
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist
@@ -146,15 +131,10 @@ jobs:
     name: Dotnet ${{ matrix.command }} on ${{ matrix.os }}
     strategy:
       matrix:
-        command: [up, refresh, destroy, preview, output]
+        command: [up, refresh, destroy, preview]
         os: [ubuntu-latest, macos-latest, windows-latest]
       fail-fast: false
     steps:
-      - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2
-        with:
-          egress-policy: audit
-
       - name: Remove pre-installed Pulumi
         shell: bash
         env:
@@ -171,30 +151,17 @@ jobs:
             rm -v "$PULUMI_INSTALL_DIR"/pulumi*
           fi
 
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7
 
       - name: Download dist artifact
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist
 
-      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 6.x
-
-      - name: Ensure Stack Exists
-        if: matrix.command == 'output'
-        uses: ./
-        env:
-          PULUMI_CONFIG_PASSPHRASE: not-a-secret
-        with:
-          command: preview
-          cloud-url: file://~
-          upsert: true
-          stack-name: dev
-          work-dir: .github/test-stacks/dotnet
-          config-map: '{name: {value: my-pet, secret: false}}'
 
       - uses: ./
         env:
@@ -244,15 +211,10 @@ jobs:
     name: Golang ${{ matrix.command }} on ${{ matrix.os }}
     strategy:
       matrix:
-        command: [up, refresh, destroy, preview, output]
+        command: [up, refresh, destroy, preview]
         os: [ubuntu-latest, macos-latest, windows-latest]
       fail-fast: false
     steps:
-      - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2
-        with:
-          egress-policy: audit
-
       - name: Remove pre-installed Pulumi
         shell: bash
         env:
@@ -269,30 +231,17 @@ jobs:
             rm -v "$PULUMI_INSTALL_DIR"/pulumi*
           fi
 
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7
 
       - name: Download dist artifact
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist
 
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@v7
         with:
-          go-version: oldstable
-
-      - name: Ensure Stack Exists
-        if: matrix.command == 'output'
-        uses: ./
-        env:
-          PULUMI_CONFIG_PASSPHRASE: not-a-secret
-        with:
-          command: preview
-          cloud-url: file://~
-          upsert: true
-          stack-name: dev
-          work-dir: .github/test-stacks/golang
-          config-map: '{name: {value: my-user-name, secret: false}}'
+          go-version: 1.15.x
 
       - uses: ./
         env:
@@ -342,15 +291,10 @@ jobs:
     name: NodeJS ${{ matrix.command }} on ${{ matrix.os }}
     strategy:
       matrix:
-        command: [up, refresh, destroy, preview, output]
+        command: [up, refresh, destroy, preview]
         os: [ubuntu-latest, macos-latest, windows-latest]
       fail-fast: false
     steps:
-      - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2
-        with:
-          egress-policy: audit
-
       - name: Remove pre-installed Pulumi
         shell: bash
         env:
@@ -367,34 +311,21 @@ jobs:
             rm -v "$PULUMI_INSTALL_DIR"/pulumi*
           fi
 
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7
 
       - name: Download dist artifact
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist
 
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - uses: actions/setup-node@v7
         with:
-          node-version: 24.x
+          node-version: 16.x
           cache: npm
 
       - run: npm install
         working-directory: .github/test-stacks/nodejs
-
-      - name: Ensure Stack Exists
-        if: matrix.command == 'output'
-        uses: ./
-        env:
-          PULUMI_CONFIG_PASSPHRASE: not-a-secret
-        with:
-          command: preview
-          cloud-url: file://~
-          upsert: true
-          stack-name: dev
-          work-dir: .github/test-stacks/nodejs
-          config-map: '{name: {value: hostname, secret: false}}'
 
       - uses: ./
         env:
@@ -445,15 +376,10 @@ jobs:
     name: Python ${{ matrix.command }} on ${{ matrix.os }}
     strategy:
       matrix:
-        command: [up, refresh, destroy, preview, output]
+        command: [up, refresh, destroy, preview]
         os: [ubuntu-latest, macos-latest, windows-latest]
       fail-fast: false
     steps:
-      - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2
-        with:
-          egress-policy: audit
-
       - name: Remove pre-installed Pulumi
         shell: bash
         env:
@@ -470,19 +396,19 @@ jobs:
             rm -v "$PULUMI_INSTALL_DIR"/pulumi*
           fi
 
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7
 
       - name: Download dist artifact
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist
 
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      - uses: actions/setup-python@v7
         with:
           python-version: 3.9
 
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - uses: actions/cache@v6
         if: startsWith(runner.os, 'Linux')
         with:
           path: ~/.cache/pip
@@ -490,7 +416,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - uses: actions/cache@v6
         if: startsWith(runner.os, 'macOS')
         with:
           path: ~/Library/Caches/pip
@@ -498,7 +424,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - uses: actions/cache@v6
         if: startsWith(runner.os, 'Windows')
         with:
           path: ~\AppData\Local\pip\Cache
@@ -506,21 +432,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - run: python -m pip install -r requirements.txt
+      - run: pip install -r requirements.txt
         working-directory: .github/test-stacks/python
-
-      - name: Ensure Stack Exists
-        if: matrix.command == 'output'
-        uses: ./
-        env:
-          PULUMI_CONFIG_PASSPHRASE: not-a-secret
-        with:
-          command: preview
-          cloud-url: file://~
-          upsert: true
-          stack-name: dev
-          work-dir: .github/test-stacks/python
-          config-map: '{name: {value: hostname, secret: false}}'
 
       - uses: ./
         env:
@@ -573,11 +486,6 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
       fail-fast: false
     steps:
-      - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2
-        with:
-          egress-policy: audit
-
       - name: Remove pre-installed Pulumi
         shell: bash
         env:
@@ -594,17 +502,17 @@ jobs:
             rm -v "$PULUMI_INSTALL_DIR"/pulumi*
           fi
 
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7
 
       - name: Download dist artifact
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist
 
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - uses: actions/setup-node@v7
         with:
-          node-version: 24.x
+          node-version: 16.x
           cache: npm
 
       - run: npm install
