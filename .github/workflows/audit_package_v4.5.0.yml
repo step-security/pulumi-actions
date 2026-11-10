@@ -26,7 +26,7 @@ on:
       yarn_version:
         description: "Yarn version to use"
         required: false
-        default: "4.15.0"
+        default: "4.18.0"
   schedule:
     - cron: "0 0 * * 1"
 
@@ -39,7 +39,7 @@ jobs:
       node_version: ${{ inputs.node_version || '24' }}
       script: ${{ inputs.script || 'yarn build' }}
       package_manager: ${{ inputs.package_manager || 'yarn' }}
-      yarn_version: ${{ inputs.yarn_version || '4.15.0' }}
+      yarn_version: ${{ inputs.yarn_version || '4.18.0' }}
 
   audit-fix-v4.5.0:
     if: github.event_name == 'schedule'
