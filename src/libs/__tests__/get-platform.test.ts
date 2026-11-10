@@ -1,12 +1,11 @@
 import * as os from 'os';
 import * as playback from 'jest-playback';
-import { mocked } from 'ts-jest/utils';
 import { getPlatform } from '../pulumi-cli';
 playback.setup(__dirname);
 
 jest.mock('os');
 
-const mockedOs = mocked(os);
+const mockedOs = jest.mocked(os);
 
 describe('get-platform', () => {
   it.each([
