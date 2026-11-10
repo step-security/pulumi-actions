@@ -139618,6 +139618,112 @@ var io = __nccwpck_require__(47351);
 var tool_cache = __nccwpck_require__(27784);
 // EXTERNAL MODULE: ./node_modules/semver/index.js
 var semver = __nccwpck_require__(11383);
+// EXTERNAL MODULE: external "crypto"
+var external_crypto_ = __nccwpck_require__(6113);
+;// CONCATENATED MODULE: ./src/libs/checksum.ts
+
+
+
+
+
+function parseChecksums(contents) {
+    /**
+     *  Parses a `sha256sum` style checksum file
+     *  contents: body of the published checksums file
+     *
+     *  return map of file name to lower case digest
+     */
+    const checksums = new Map();
+    for (const line of contents.split('\n')) {
+        // `<digest>  <name>`, where the name may carry a `*` binary mode marker
+        const match = line.trim().match(/^([a-fA-F0-9]{64})\s+\*?(\S+)$/);
+        if (match) {
+            checksums.set(external_path_.posix.basename(match[2]), match[1].toLowerCase());
+        }
+    }
+    return checksums;
+}
+function sha256(filePath) {
+    return new Promise((resolve, reject) => {
+        const hash = external_crypto_.createHash('sha256');
+        const stream = external_fs_.createReadStream(filePath);
+        stream.on('error', reject);
+        stream.on('data', (chunk) => hash.update(chunk));
+        stream.on('end', () => resolve(hash.digest('hex')));
+    });
+}
+function findChecksum(checksums, fileName, platform) {
+    /**
+     *  Looks up the digest for a download
+     *  checksums: parsed checksums file
+     *  fileName: name of the downloaded file
+     *  platform: the platform the download was picked for
+     *
+     *  return the digest, or undefined if the file is not listed
+     */
+    const exact = checksums.get(fileName);
+    if (exact) {
+        return exact;
+    }
+    // Dev builds are served as `pulumi-v3.1.0-alpha.xdeadbee-linux-x64.tar.gz`
+    // but listed under the release version they were cut from, so fall back to
+    // the platform. A checksums file covers one version with one entry per
+    // platform, so insist on a single match rather than guessing.
+    if (!platform) {
+        return undefined;
+    }
+    const matches = [...checksums].filter(([name]) => name.includes(`-${platform}.`));
+    return matches.length === 1 ? matches[0][1] : undefined;
+}
+function verifyChecksum(filePath, downloadUrl, checksumsUrl, platform) {
+    return __awaiter(this, void 0, void 0, function* () {
+        /**
+         *  Verifies a downloaded file against the checksums Pulumi publishes
+         *  alongside the release. A mismatch is fatal, but a checksum that cannot be
+         *  located is only a warning: releases that predate the published checksum
+         *  files must keep installing as they did before
+         *  filePath: the downloaded file on disk
+         *  downloadUrl: where the file came from, used to pick the right entry
+         *  checksumsUrl: the published checksums file, empty when there is none
+         *  platform: the platform the download was picked for
+         */
+        if (!checksumsUrl) {
+            core.warning(`No checksums are published for ${downloadUrl}, skipping verification`);
+            return;
+        }
+        let checksums;
+        try {
+            const response = yield fetch(checksumsUrl);
+            if (!response.ok) {
+                throw new Error(`${response.status} ${response.statusText}`);
+            }
+            checksums = parseChecksums(yield response.text());
+        }
+        catch (error) {
+            core.warning(`Unable to fetch checksums from ${checksumsUrl}, skipping verification: ${error}`);
+            return;
+        }
+        let fileName;
+        try {
+            fileName = external_path_.posix.basename(new URL(downloadUrl).pathname);
+        }
+        catch (_a) {
+            core.warning(`Could not derive a file name from ${downloadUrl}, skipping verification`);
+            return;
+        }
+        const expected = findChecksum(checksums, fileName, platform);
+        if (!expected) {
+            core.warning(`No checksum listed for ${fileName} in ${checksumsUrl}, skipping verification`);
+            return;
+        }
+        const actual = yield sha256(filePath);
+        if (actual !== expected) {
+            throw new Error(`Checksum mismatch for ${fileName}: expected ${expected} but the download from ${downloadUrl} hashed to ${actual}. Refusing to install.`);
+        }
+        core.info(`Verified the sha256 checksum of ${fileName}`);
+    });
+}
+
 // EXTERNAL MODULE: ./node_modules/@actions/exec/lib/exec.js
 var exec = __nccwpck_require__(71514);
 ;// CONCATENATED MODULE: ./src/libs/exec.ts
@@ -139683,6 +139789,7 @@ function getVersionObject(range) {
 }
 
 ;// CONCATENATED MODULE: ./src/libs/pulumi-cli.ts
+
 
 
 
@@ -139769,7 +139876,7 @@ function downloadCli(range) {
                 core.info('Pulumi is not detected in the PATH. Proceeding to download');
             }
         }
-        const { version, downloads } = yield getVersionObject(range);
+        const { version, downloads, checksums } = yield getVersionObject(range);
         core.info(`Matched version: ${version}`);
         const isUnsupportedVersion = semver.lt(version, '3.0.0');
         if (isUnsupportedVersion) {
@@ -139784,6 +139891,7 @@ function downloadCli(range) {
         });
         const downloaded = yield tool_cache.downloadTool(downloads[platform]);
         core.debug(`successfully downloaded ${downloads[platform]} to ${downloaded}`);
+        yield verifyChecksum(downloaded, downloads[platform], checksums, platform);
         yield io.mkdirP(destination);
         core.debug(`Successfully created ${destination}`);
         switch (platform) {
@@ -142592,8 +142700,6 @@ class InterceptorManager {
   encodeBasicAuthUsername: false,
 });
 
-// EXTERNAL MODULE: external "crypto"
-var external_crypto_ = __nccwpck_require__(6113);
 // EXTERNAL MODULE: external "url"
 var external_url_ = __nccwpck_require__(57310);
 ;// CONCATENATED MODULE: ./node_modules/axios/lib/platform/node/classes/URLSearchParams.js

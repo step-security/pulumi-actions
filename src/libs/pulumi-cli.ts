@@ -4,6 +4,7 @@ import * as core from '@actions/core';
 import * as io from '@actions/io';
 import * as tc from '@actions/tool-cache';
 import * as semver from 'semver';
+import { verifyChecksum } from './checksum';
 import * as exec from './exec';
 import { getVersionObject } from './libs/get-version';
 
@@ -96,7 +97,7 @@ export async function downloadCli(range: string): Promise<void> {
     }
   }
 
-  const { version, downloads } = await getVersionObject(range);
+  const { version, downloads, checksums } = await getVersionObject(range);
 
   core.info(`Matched version: ${version}`);
 
@@ -122,6 +123,8 @@ export async function downloadCli(range: string): Promise<void> {
 
   const downloaded = await tc.downloadTool(downloads[platform]);
   core.debug(`successfully downloaded ${downloads[platform]} to ${downloaded}`);
+
+  await verifyChecksum(downloaded, downloads[platform], checksums, platform);
 
   await io.mkdirP(destination);
   core.debug(`Successfully created ${destination}`);
