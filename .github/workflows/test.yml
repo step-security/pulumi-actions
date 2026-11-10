@@ -32,12 +32,6 @@ jobs:
       - uses: actions/setup-go@v7
         with:
           go-version: '^1.13.1'
-      - run: |
-          pulumi login --local
-          pulumi stack init dev
-        working-directory: .github/test-stacks/golang
-        env:
-          PULUMI_CONFIG_PASSPHRASE: not-a-secret
       - run: corepack enable
       - uses: actions/setup-node@v7
         with:
@@ -45,6 +39,14 @@ jobs:
           cache: yarn
       - run: yarn install
       - run: yarn build
+      - name: Install Pulumi CLI
+        uses: ./
+      - run: |
+          pulumi login --local
+          pulumi stack init dev
+        working-directory: .github/test-stacks/golang
+        env:
+          PULUMI_CONFIG_PASSPHRASE: not-a-secret
       - uses: ./
         if: always()
         id: pulumi
@@ -65,12 +67,6 @@ jobs:
       - uses: actions/setup-go@v7
         with:
           go-version: '^1.13.1'
-      - run: |
-          pulumi login --local
-          pulumi stack init dev
-        working-directory: .github/test-stacks/golang
-        env:
-          PULUMI_CONFIG_PASSPHRASE: not-a-secret
       - run: corepack enable
       - uses: actions/setup-node@v7
         with:
@@ -78,6 +74,14 @@ jobs:
           cache: yarn
       - run: yarn install
       - run: yarn build
+      - name: Install Pulumi CLI
+        uses: ./
+      - run: |
+          pulumi login --local
+          pulumi stack init dev
+        working-directory: .github/test-stacks/golang
+        env:
+          PULUMI_CONFIG_PASSPHRASE: not-a-secret
       - name: Generate Update Plan via Pulumi Preview
         uses: ./
         if: always()
