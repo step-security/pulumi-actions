@@ -6,3 +6,157 @@
 [[IgnoredVulns]]
 id = "GO-2026-5932"
 reason = "golang.org/x/crypto/openpgp is unmaintained, with no fixed version to upgrade to (introduced at 0, never fixed). It is pulled in only transitively by go-git's commit signing, and govulncheck confirms this program calls none of its symbols. Revisit if this stack ever signs commits or verifies OpenPGP data."
+
+
+# --- CI-only test stack ---
+# .github/test-stacks/golang is a fixture that the workflows run Pulumi against on
+# ephemeral runners. It is not part of src/ or dist/. Its go.mod/go.sum pin 2020-era
+# Pulumi SDK dependencies (a newer SDK needs a newer Go and breaks the fixture), and
+# the stdlib findings come from the old `go 1.14` directive, not the Go 1.24
+# toolchain CI builds with. Not verified with govulncheck.
+
+[[PackageOverrides]]
+name = "stdlib"
+ecosystem = "Go"
+ignore = true
+reason = "CI-only golang test stack dependency (see note above); not in src/ or dist/."
+
+[[PackageOverrides]]
+name = "github.com/dgrijalva/jwt-go"
+version = "3.2.0+incompatible"
+ecosystem = "Go"
+ignore = true
+reason = "CI-only golang test stack dependency (see note above); not in src/ or dist/."
+
+[[PackageOverrides]]
+name = "github.com/gogo/protobuf"
+version = "1.3.1"
+ecosystem = "Go"
+ignore = true
+reason = "CI-only golang test stack dependency (see note above); not in src/ or dist/."
+
+[[PackageOverrides]]
+name = "github.com/golang/glog"
+version = "0.0.0-20160126235308-23def4e6c14b"
+ecosystem = "Go"
+ignore = true
+reason = "CI-only golang test stack dependency (see note above); not in src/ or dist/."
+
+[[PackageOverrides]]
+name = "github.com/gorilla/websocket"
+version = "1.4.0"
+ecosystem = "Go"
+ignore = true
+reason = "CI-only golang test stack dependency (see note above); not in src/ or dist/."
+
+[[PackageOverrides]]
+name = "github.com/prometheus/client_golang"
+version = "0.9.3"
+ecosystem = "Go"
+ignore = true
+reason = "CI-only golang test stack dependency (see note above); not in src/ or dist/."
+
+[[PackageOverrides]]
+name = "github.com/sirupsen/logrus"
+version = "1.4.1"
+ecosystem = "Go"
+ignore = true
+reason = "CI-only golang test stack dependency (see note above); not in src/ or dist/."
+
+[[PackageOverrides]]
+name = "github.com/yuin/goldmark"
+version = "1.1.27"
+ecosystem = "Go"
+ignore = true
+reason = "CI-only golang test stack dependency (see note above); not in src/ or dist/."
+
+[[PackageOverrides]]
+name = "golang.org/x/crypto"
+version = "0.0.0-20200317142112-1b76d66859c6"
+ecosystem = "Go"
+ignore = true
+reason = "CI-only golang test stack dependency (see note above); not in src/ or dist/."
+
+[[PackageOverrides]]
+name = "golang.org/x/mod"
+version = "0.3.0"
+ecosystem = "Go"
+ignore = true
+reason = "CI-only golang test stack dependency (see note above); not in src/ or dist/."
+
+[[PackageOverrides]]
+name = "golang.org/x/net"
+version = "0.0.0-20200301022130-244492dfa37a"
+ecosystem = "Go"
+ignore = true
+reason = "CI-only golang test stack dependency (see note above); not in src/ or dist/."
+
+[[PackageOverrides]]
+name = "golang.org/x/net"
+version = "0.0.0-20200602114024-627f9648deb9"
+ecosystem = "Go"
+ignore = true
+reason = "CI-only golang test stack dependency (see note above); not in src/ or dist/."
+
+[[PackageOverrides]]
+name = "golang.org/x/oauth2"
+version = "0.0.0-20180821212333-d2e6202438be"
+ecosystem = "Go"
+ignore = true
+reason = "CI-only golang test stack dependency (see note above); not in src/ or dist/."
+
+[[PackageOverrides]]
+name = "golang.org/x/sys"
+version = "0.0.0-20200317113312-5766fd39f98d"
+ecosystem = "Go"
+ignore = true
+reason = "CI-only golang test stack dependency (see note above); not in src/ or dist/."
+
+[[PackageOverrides]]
+name = "golang.org/x/sys"
+version = "0.0.0-20200602225109-6fdc65e7d980"
+ecosystem = "Go"
+ignore = true
+reason = "CI-only golang test stack dependency (see note above); not in src/ or dist/."
+
+[[PackageOverrides]]
+name = "golang.org/x/text"
+version = "0.3.2"
+ecosystem = "Go"
+ignore = true
+reason = "CI-only golang test stack dependency (see note above); not in src/ or dist/."
+
+[[PackageOverrides]]
+name = "google.golang.org/grpc"
+version = "1.28.0"
+ecosystem = "Go"
+ignore = true
+reason = "CI-only golang test stack dependency (see note above); not in src/ or dist/."
+
+[[PackageOverrides]]
+name = "google.golang.org/grpc"
+version = "1.29.1"
+ecosystem = "Go"
+ignore = true
+reason = "CI-only golang test stack dependency (see note above); not in src/ or dist/."
+
+[[PackageOverrides]]
+name = "google.golang.org/protobuf"
+version = "1.24.0"
+ecosystem = "Go"
+ignore = true
+reason = "CI-only golang test stack dependency (see note above); not in src/ or dist/."
+
+[[PackageOverrides]]
+name = "gopkg.in/src-d/go-git.v4"
+version = "4.13.1"
+ecosystem = "Go"
+ignore = true
+reason = "CI-only golang test stack dependency (see note above); not in src/ or dist/."
+
+[[PackageOverrides]]
+name = "gopkg.in/yaml.v3"
+version = "3.0.0-20200313102051-9f266ea9e77c"
+ecosystem = "Go"
+ignore = true
+reason = "CI-only golang test stack dependency (see note above); not in src/ or dist/."

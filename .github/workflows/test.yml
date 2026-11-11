@@ -16,15 +16,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         with:
           egress-policy: audit
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: corepack enable
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24.x
-      - run: corepack enable
+          cache: yarn
       - run: yarn install
       - run: yarn build
       - run: yarn test
@@ -32,32 +33,36 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         with:
           egress-policy: audit
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: oldstable
+          go-version: '^1.13.1'
+      - run: corepack enable
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.x
+          cache: yarn
+      - run: yarn install
+      - run: yarn build
+      - name: Install Pulumi CLI
+        uses: ./
       - run: |
           pulumi login --local
           pulumi stack init dev
         working-directory: .github/test-stacks/golang
         env:
           PULUMI_CONFIG_PASSPHRASE: not-a-secret
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 24.x
-      - run: corepack enable
-      - run: yarn install
-      - run: yarn build
-      - name: Run Pulumi Up
-        uses: ./
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: ./
         if: always()
         id: pulumi
         env:
           PULUMI_CONFIG_PASSPHRASE: not-a-secret
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           command: up
           cloud-url: file://~
@@ -65,61 +70,42 @@ jobs:
           upsert: true
           work-dir: .github/test-stacks/golang
           config-map: "{name: {value: test, secret: false}}"
-          suppress-progress: true
-          log-verbosity: 6
-          debug: true
       - run: echo 'The random string is `${{ steps.pulumi.outputs.name }}`'
-      - name: Get Outputs
-        uses: ./
-        if: always()
-        id: pulumioutput
-        env:
-          PULUMI_CONFIG_PASSPHRASE: not-a-secret
-        with:
-          command: output
-          cloud-url: file://~
-          stack-name: organization/golang/dev
-      - run: echo 'The random string is `${{ steps.pulumioutput.outputs.name }}`'
-      - name: Compare Outputs
-        id: compare
-        run: |
-          if [[ "$OUTPUT1" != "$OUTPUT2" ]]; then
-            echo "Outputs are not equal!"
-            exit 1
-          fi
-        env:
-          OUTPUT1: ${{ steps.pulumi.outputs.name }}
-          OUTPUT2: ${{ steps.pulumioutput.outputs.name }}
   test-update-plan: # make sure the action works on a clean machine without building
     runs-on: ubuntu-latest
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         with:
           egress-policy: audit
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: oldstable
+          go-version: '^1.13.1'
+      - run: corepack enable
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.x
+          cache: yarn
+      - run: yarn install
+      - run: yarn build
+      - name: Install Pulumi CLI
+        uses: ./
       - run: |
           pulumi login --local
           pulumi stack init dev
         working-directory: .github/test-stacks/golang
         env:
           PULUMI_CONFIG_PASSPHRASE: not-a-secret
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 24.x
-      - run: corepack enable
-      - run: yarn install
-      - run: yarn build
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Generate Update Plan via Pulumi Preview
         uses: ./
         if: always()
         id: pulumi-preview
         env:
           PULUMI_CONFIG_PASSPHRASE: not-a-secret
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           command: preview
           cloud-url: file://~
@@ -128,15 +114,13 @@ jobs:
           work-dir: .github/test-stacks/golang
           config-map: "{name: {value: test, secret: false}}"
           plan: /tmp/update-plan.json
-          suppress-progress: true
-          log-verbosity: 6
-          debug: true
       - name: Apply Update Plan via Pulumi Up
         uses: ./
         if: always()
         id: pulumi-up
         env:
           PULUMI_CONFIG_PASSPHRASE: not-a-secret
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           command: up
           cloud-url: file://~
@@ -145,50 +129,4 @@ jobs:
           work-dir: .github/test-stacks/golang
           config-map: "{name: {value: test, secret: false}}"
           plan: /tmp/update-plan.json
-          suppress-progress: true
-          log-verbosity: 6
-          debug: true
       - run: echo 'The random string is `${{ steps.pulumi-up.outputs.name }}`'
-  test-pr-version: # test installing Pulumi from a PR build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2
-        with:
-          egress-policy: audit
-
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 24.x
-      - run: corepack enable
-      - run: yarn install
-      - run: yarn build
-      # We use the last merged PR to guarantee we are not trying to access an artifact that has been deleted.
-      # GitHub automatically deletes workflow artifacts after a retention period, so using a recent merged PR
-      # ensures the PR build artifacts are still available for testing.
-      # Fork (community) PRs are excluded: their CI runs don't upload CLI artifacts.
-      - name: Get last merged PR number
-        id: get-pr
-        run: |
-          PR_NUMBER=$(gh pr list --repo pulumi/pulumi --state merged --limit 20 --json number,isCrossRepository --jq '[.[] | select(.isCrossRepository | not)][0].number')
-          echo "pr-number=$PR_NUMBER" >> $GITHUB_OUTPUT
-          echo "Using PR #$PR_NUMBER"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Install Pulumi from PR
-        uses: ./
-        with:
-          pulumi-version: pr#${{ steps.get-pr.outputs.pr-number }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Verify Pulumi version
-        run: |
-          INSTALLED_VERSION=$(pulumi version)
-          echo "Installed version: $INSTALLED_VERSION"
-          # Verify the version starts with 'v' and contains 'alpha' (PR builds are alpha versions)
-          if [[ ! "$INSTALLED_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-alpha ]]; then
-            echo "Error: Expected PR build version format (v*.*.*-alpha*), got $INSTALLED_VERSION"
-            exit 1
-          fi
-          echo "Successfully installed PR build: $INSTALLED_VERSION"

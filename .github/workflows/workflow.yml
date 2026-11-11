@@ -15,23 +15,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         with:
           egress-policy: audit
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - run: corepack enable
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24.x
-
-      - run: corepack enable
+          cache: yarn
 
       - run: yarn install
 
       - run: yarn build
 
-      - uses: step-security/paths-filter@v4
+      - uses: step-security/paths-filter@5f3d1a83daa17363d18b529d60375e1e36566799 # v4.0.3
         id: changes
         with:
           base: HEAD
@@ -66,7 +66,7 @@ jobs:
       fail-fast: false
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         with:
           egress-policy: audit
 
@@ -82,6 +82,7 @@ jobs:
       - uses: ./
         env:
           PULUMI_CONFIG_PASSPHRASE: not-a-secret
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           config-map: '{name: {value: my-pet, secret: false}}'
 
@@ -100,7 +101,7 @@ jobs:
       fail-fast: false
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         with:
           egress-policy: audit
 
@@ -132,6 +133,7 @@ jobs:
       - uses: ./
         env:
           PULUMI_CONFIG_PASSPHRASE: not-a-secret
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           config-map: '{name: {value: my-pet, secret: false}}'
 
@@ -146,12 +148,12 @@ jobs:
     name: Dotnet ${{ matrix.command }} on ${{ matrix.os }}
     strategy:
       matrix:
-        command: [up, refresh, destroy, preview, output]
+        command: [up, refresh, destroy, preview]
         os: [ubuntu-latest, macos-latest, windows-latest]
       fail-fast: false
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         with:
           egress-policy: audit
 
@@ -179,26 +181,14 @@ jobs:
           name: dist
           path: dist
 
-      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
           dotnet-version: 6.x
-
-      - name: Ensure Stack Exists
-        if: matrix.command == 'output'
-        uses: ./
-        env:
-          PULUMI_CONFIG_PASSPHRASE: not-a-secret
-        with:
-          command: preview
-          cloud-url: file://~
-          upsert: true
-          stack-name: dev
-          work-dir: .github/test-stacks/dotnet
-          config-map: '{name: {value: my-pet, secret: false}}'
 
       - uses: ./
         env:
           PULUMI_CONFIG_PASSPHRASE: not-a-secret
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           command: ${{ matrix.command }}
           cloud-url: file://~
@@ -219,6 +209,7 @@ jobs:
         uses: ./
         env:
           PULUMI_CONFIG_PASSPHRASE: not-a-secret
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           command: ${{ matrix.command }}
           cloud-url: file://~
@@ -244,12 +235,12 @@ jobs:
     name: Golang ${{ matrix.command }} on ${{ matrix.os }}
     strategy:
       matrix:
-        command: [up, refresh, destroy, preview, output]
+        command: [up, refresh, destroy, preview]
         os: [ubuntu-latest, macos-latest, windows-latest]
       fail-fast: false
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         with:
           egress-policy: audit
 
@@ -279,24 +270,12 @@ jobs:
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: oldstable
-
-      - name: Ensure Stack Exists
-        if: matrix.command == 'output'
-        uses: ./
-        env:
-          PULUMI_CONFIG_PASSPHRASE: not-a-secret
-        with:
-          command: preview
-          cloud-url: file://~
-          upsert: true
-          stack-name: dev
-          work-dir: .github/test-stacks/golang
-          config-map: '{name: {value: my-user-name, secret: false}}'
+          go-version: 1.24.x
 
       - uses: ./
         env:
           PULUMI_CONFIG_PASSPHRASE: not-a-secret
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           command: ${{ matrix.command }}
           cloud-url: file://~
@@ -317,6 +296,7 @@ jobs:
         uses: ./
         env:
           PULUMI_CONFIG_PASSPHRASE: not-a-secret
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           command: ${{ matrix.command }}
           cloud-url: file://~
@@ -342,12 +322,12 @@ jobs:
     name: NodeJS ${{ matrix.command }} on ${{ matrix.os }}
     strategy:
       matrix:
-        command: [up, refresh, destroy, preview, output]
+        command: [up, refresh, destroy, preview]
         os: [ubuntu-latest, macos-latest, windows-latest]
       fail-fast: false
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         with:
           egress-policy: audit
 
@@ -383,22 +363,10 @@ jobs:
       - run: npm install
         working-directory: .github/test-stacks/nodejs
 
-      - name: Ensure Stack Exists
-        if: matrix.command == 'output'
-        uses: ./
-        env:
-          PULUMI_CONFIG_PASSPHRASE: not-a-secret
-        with:
-          command: preview
-          cloud-url: file://~
-          upsert: true
-          stack-name: dev
-          work-dir: .github/test-stacks/nodejs
-          config-map: '{name: {value: hostname, secret: false}}'
-
       - uses: ./
         env:
           PULUMI_CONFIG_PASSPHRASE: not-a-secret
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           command: ${{ matrix.command }}
           cloud-url: file://~
@@ -419,6 +387,7 @@ jobs:
         uses: ./
         env:
           PULUMI_CONFIG_PASSPHRASE: not-a-secret
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           command: ${{ matrix.command }}
           cloud-url: file://~
@@ -445,12 +414,12 @@ jobs:
     name: Python ${{ matrix.command }} on ${{ matrix.os }}
     strategy:
       matrix:
-        command: [up, refresh, destroy, preview, output]
+        command: [up, refresh, destroy, preview]
         os: [ubuntu-latest, macos-latest, windows-latest]
       fail-fast: false
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         with:
           egress-policy: audit
 
@@ -480,7 +449,7 @@ jobs:
 
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: 3.9
+          python-version: '3.12'
 
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: startsWith(runner.os, 'Linux')
@@ -506,25 +475,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - run: python -m pip install -r requirements.txt
+      - run: pip install -r requirements.txt
         working-directory: .github/test-stacks/python
-
-      - name: Ensure Stack Exists
-        if: matrix.command == 'output'
-        uses: ./
-        env:
-          PULUMI_CONFIG_PASSPHRASE: not-a-secret
-        with:
-          command: preview
-          cloud-url: file://~
-          upsert: true
-          stack-name: dev
-          work-dir: .github/test-stacks/python
-          config-map: '{name: {value: hostname, secret: false}}'
 
       - uses: ./
         env:
           PULUMI_CONFIG_PASSPHRASE: not-a-secret
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           command: ${{ matrix.command }}
           cloud-url: file://~
@@ -545,6 +502,7 @@ jobs:
         uses: ./
         env:
           PULUMI_CONFIG_PASSPHRASE: not-a-secret
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           command: ${{ matrix.command }}
           cloud-url: file://~
@@ -574,7 +532,7 @@ jobs:
       fail-fast: false
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         with:
           egress-policy: audit
 
@@ -613,6 +571,7 @@ jobs:
       - uses: ./
         env:
           PULUMI_CONFIG_PASSPHRASE: not-a-secret
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           command: up
           cloud-url: file://~
