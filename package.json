@@ -2,7 +2,7 @@
   "name": "pulumi-github-action",
   "version": "4.0.0",
   "main": "dist/index.js",
-  "repository": "git@github.com:pulumi/actions",
+  "repository": "git@github.com:step-security/pulumi-actions",
   "license": "Apache-2.0",
   "packageManager": "yarn@4.18.1",
   "scripts": {
