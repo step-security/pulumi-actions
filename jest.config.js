@@ -1,13 +1,13 @@
 module.exports = {
-  preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
-  testEnvironmentOptions: {
-    customExportConditions: ['node', 'import', 'default'],
-  },
-  extensionsToTreatAsEsm: ['.ts'],
-  transform: {
-    '^.+\\.tsx?$': ['ts-jest', { useESM: true }],
-  },
-  collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts'],
+  collectCoverageFrom: ['src/**/*.ts'],
   testPathIgnorePatterns: ['.*/dist/.*', '.*dist.*'],
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', { tsconfig: 'tsconfig.json' }],
+  },
+  // Keep the snapshot format used by the existing snapshots (Jest 29 changed it).
+  snapshotFormat: {
+    escapeString: true,
+    printBasicPrototype: true,
+  },
 };

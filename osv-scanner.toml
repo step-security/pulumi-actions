@@ -1,0 +1,63 @@
+# Configuration for https://github.com/google/osv-scanner
+#
+# This file must sit beside yarn.lock: osv-scanner resolves config relative to
+# the manifest it is scanning and does not walk up to the repository root.
+#
+# Only src/ is shipped, bundled by ncc into dist/index.js. Each entry below was
+# checked against dist/index.js.map (the bundled module list) and the call sites.
+
+# --- Not bundled into dist/index.js ---
+
+[[IgnoredVulns]]
+id = "GHSA-8988-4f7v-96qf"
+reason = "@opentelemetry/core 1.7.0 is only reached through @pulumi/pulumi's tracing exporters. It is not in dist/index.js, and the action never enables tracing."
+
+[[IgnoredVulns]]
+id = "GHSA-45rx-2jwx-cxfr"
+reason = "@opentelemetry/propagator-jaeger 1.7.0 is only reached through @pulumi/pulumi's tracing SDK. It is not in dist/index.js, and the action never enables tracing."
+
+[[IgnoredVulns]]
+id = "GHSA-vpq2-c234-7xj6"
+reason = "@tootallnate/once 1.1.2 is only reached through http-proxy-agent (jest/jsdom). Dev tooling, not in dist/index.js."
+
+[[IgnoredVulns]]
+id = "GHSA-grv7-fg5c-xmjg"
+reason = "braces 2.3.2 is only reached through micromatch 3.x (jest's file watcher). Dev tooling, not in dist/index.js."
+
+[[IgnoredVulns]]
+id = "GHSA-952p-6rrq-rcjv"
+reason = "micromatch 3.1.10 is only reached through jest's anymatch/sane. Dev tooling, not in dist/index.js."
+
+[[IgnoredVulns]]
+id = "GHSA-qr28-fpjm-wq7f"
+reason = "decode-uri-component 0.2.2 is only reached through source-map-resolve (jest). Dev tooling, not in dist/index.js."
+
+[[IgnoredVulns]]
+id = "GHSA-vcc3-ghjq-m6fr"
+reason = "decode-uri-component 0.2.2 is only reached through source-map-resolve (jest). Dev tooling, not in dist/index.js."
+
+[[IgnoredVulns]]
+id = "GHSA-gcqx-w48m-w2h4"
+reason = "deepmerge 4.2.2 is only reached through jest-config. Dev tooling, not in dist/index.js."
+
+[[IgnoredVulns]]
+id = "GHSA-5w9c-rv96-fr7g"
+reason = "faker 6.6.6 is only a stub dependency of the @types/faker devDependency. Not in dist/index.js."
+
+[[IgnoredVulns]]
+id = "GHSA-3g3m-2fjr-6pw4"
+reason = "glob 10.5.0 is only used by rimraf in the clean script. Build tooling, not in dist/index.js."
+
+[[IgnoredVulns]]
+id = "GHSA-g3hv-75wg-m249"
+reason = "minimatch 9.0.9 is only used by build/lint tooling (glob via rimraf). Not in dist/index.js."
+
+# --- Bundled, but the vulnerable code path is never called ---
+
+[[IgnoredVulns]]
+id = "GHSA-w5hq-g745-h8pq"
+reason = "Affects only uuid v3/v5/v6 called with a caller-supplied buffer. The bundled uuid copies (@actions/core, @actions/tool-cache) call only v4() with no buffer."
+
+[[IgnoredVulns]]
+id = "GHSA-h5c3-5r3r-rr8q"
+reason = "Affects only octokit.paginate.iterator() on a crafted link header. src/libs/pr.ts uses only issues.listComments/updateComment/createComment and never paginates."

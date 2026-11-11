@@ -13,8 +13,6 @@ return await Deployment.RunAsync(() =>
 
     var petName = pet.Id;
 
-    Pulumi.Log.Debug("I'm  a random pet", pet);
-
     // Export outputs here
     return new Dictionary<string, object?>
     {

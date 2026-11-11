@@ -1,12 +1,12 @@
 import * as core from '@actions/core';
-import * as exec from './libs/exec';
 import * as pulumiCli from './libs/pulumi-cli';
 
-export const login = async (workDir: string, cloudUrl: string): Promise<exec.ExecResult> => {
+export const login = async (cloudUrl: string, accessToken: string): Promise<void> => {  
   if (cloudUrl) {
     core.info(`Logging into ${cloudUrl}`);
-    return pulumiCli.run('--non-interactive', '--cwd', workDir, 'login', cloudUrl);
+    await pulumiCli.run('--non-interactive' ,'login', cloudUrl);
+  } else if (accessToken !== '') {
+    core.info("Logging into the Pulumi Cloud backend.");
+    await pulumiCli.run('--non-interactive', 'login');
   }
-  core.info("Logging into the Pulumi Cloud backend.");
-  return pulumiCli.run('--non-interactive', '--cwd', workDir, 'login');
 };
