@@ -2078,10 +2078,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/dedent@npm:^0.7.2":
-  version: 0.7.2
-  resolution: "@types/dedent@npm:0.7.2"
-  checksum: 10c0/a4b9c9e5b936ac623cce6349d4b28eaa5f677007fb1f4a34983b89f3df26834d32d87c935ecfddb64fbb6d47abb2fb49c1b2ddf964e747d5ac7199009f14ff98
+"@types/dedent@npm:^1.7.2":
+  version: 1.7.2
+  resolution: "@types/dedent@npm:1.7.2"
+  dependencies:
+    dedent: "npm:*"
+  checksum: 10c0/ebd993ea611cc1fae793fbf5f1ffddb6f061c8e19712bb36533c848adcc47efd543aa4f042818da7c6a9df46c0ce76dc46edf38269e8803ef69732180a2fcfbd
   languageName: node
   linkType: hard
 
@@ -3157,7 +3159,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dedent@npm:^1.6.0, dedent@npm:^1.7.2":
+"dedent@npm:*, dedent@npm:^1.6.0, dedent@npm:^1.7.2":
   version: 1.7.2
   resolution: "dedent@npm:1.7.2"
   peerDependencies:
@@ -5686,7 +5688,7 @@ __metadata:
     "@eslint/js": "npm:~10.0.1"
     "@jest/globals": "npm:~30.5.1"
     "@pulumi/pulumi": "npm:~3.261.0"
-    "@types/dedent": "npm:^0.7.2"
+    "@types/dedent": "npm:^1.7.2"
     "@types/jest": "npm:~30.0.0"
     "@types/js-yaml": "npm:^4.0.9"
     "@types/node": "npm:~26.4.1"

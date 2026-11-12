@@ -20,7 +20,7 @@
   "devDependencies": {
     "@eslint/js": "~10.0.1",
     "@jest/globals": "~30.5.1",
-    "@types/dedent": "^0.7.2",
+    "@types/dedent": "^1.7.2",
     "@types/jest": "~30.0.0",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "~26.4.1",
