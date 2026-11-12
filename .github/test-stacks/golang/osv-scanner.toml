@@ -6,3 +6,19 @@
 [[IgnoredVulns]]
 id = "GO-2026-5932"
 reason = "golang.org/x/crypto/openpgp is unmaintained, with no fixed version to upgrade to (introduced at 0, never fixed). It is pulled in only transitively by go-git's commit signing, and govulncheck confirms this program calls none of its symbols. Revisit if this stack ever signs commits or verifies OpenPGP data."
+
+[[IgnoredVulns]]
+id = "GO-2026-6865"
+reason = "github.com/klauspost/compress zstd panic on two-block frames. Transitive dependency of the Pulumi SDK; this test stack only creates a random string and never decompresses untrusted zstd data."
+
+[[IgnoredVulns]]
+id = "GO-2026-6860"
+reason = "golang.org/x/net/html quadratic text-node coalescing. Transitive dependency of the Pulumi SDK; this test stack never parses HTML."
+
+[[IgnoredVulns]]
+id = "GO-2026-6866"
+reason = "golang.org/x/net/html raw-text rendering namespace check. Transitive dependency of the Pulumi SDK; this test stack never renders HTML."
+
+[[IgnoredVulns]]
+id = "GO-2026-6859"
+reason = "net/http HTTP/1 server crash via MaxBytesReader header race. This test stack is a short-lived Pulumi program, not an HTTP server, and never uses MaxBytesReader or MaxBytesHandler."
