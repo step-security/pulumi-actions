@@ -22,3 +22,7 @@ reason = "golang.org/x/net/html raw-text rendering namespace check. Transitive d
 [[IgnoredVulns]]
 id = "GO-2026-6859"
 reason = "net/http HTTP/1 server crash via MaxBytesReader header race. This test stack is a short-lived Pulumi program, not an HTTP server, and never uses MaxBytesReader or MaxBytesHandler."
+
+[[IgnoredVulns]]
+id = "GHSA-q7gw-24fr-5p69"
+reason = "go.opentelemetry.io/otel/sdk and sdk/log AttributeValueLengthLimit bypass with U+FFFD runes. Transitive dependency of the Pulumi SDK's tracing; this test stack never configures an attribute value length limit and only creates a random string."
