@@ -26,3 +26,1067 @@ reason = "net/http HTTP/1 server crash via MaxBytesReader header race. This test
 [[IgnoredVulns]]
 id = "GHSA-q7gw-24fr-5p69"
 reason = "go.opentelemetry.io/otel/sdk and sdk/log AttributeValueLengthLimit bypass with U+FFFD runes. Transitive dependency of the Pulumi SDK's tracing; this test stack never configures an attribute value length limit and only creates a random string."
+
+[[IgnoredVulns]]
+id = "GHSA-2v4p-qf9q-27wj"
+reason = "google.golang.org/grpc: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-2wrh-6pvc-2jm9"
+reason = "golang.org/x/net: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-3vm4-22fp-5rfm"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-3xh2-74w9-5vxm"
+reason = "github.com/gorilla/websocket: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-4374-p667-p6c8"
+reason = "golang.org/x/net: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-449p-3h89-pw88"
+reason = "gopkg.in/src-d/go-git.v4: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-45gg-vh54-h5m9"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-45x7-px36-x8w8"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-4f99-4q7p-p3gh"
+reason = "github.com/sirupsen/logrus: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-4v7x-pqxf-cx7m"
+reason = "golang.org/x/net: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-5cgq-3rg8-m6cv"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-5cv4-jp36-h3mw"
+reason = "golang.org/x/net: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-5rcv-m4m3-hfh7"
+reason = "golang.org/x/text: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-69cg-p879-7622"
+reason = "golang.org/x/net: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-69ch-w2m2-3vjp"
+reason = "golang.org/x/text: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-6v2p-p543-phr9"
+reason = "golang.org/x/oauth2: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-6wxm-mpqj-6jpf"
+reason = "github.com/golang/glog: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-78mq-xcr3-xm33"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-83g2-8m93-v3w7"
+reason = "golang.org/x/net: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-89gr-r52h-f8rx"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-8c26-wmh5-6g9v"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-8r3f-844c-mc37"
+reason = "google.golang.org/protobuf: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-9m57-25v3-79x9"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-c3h9-896r-86jm"
+reason = "github.com/gogo/protobuf: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-cg3q-j54f-5p7p"
+reason = "github.com/prometheus/client_golang: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-f5wc-c3c7-36mc"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-f6x5-jh6r-wrfv"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-gwc9-m7rh-j2ww"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-h86h-8ppg-mxmh"
+reason = "golang.org/x/net: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-hcg3-q754-cr77"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-hp87-p4gw-j4gq"
+reason = "gopkg.in/yaml.v3: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-hrxh-6v49-42gf"
+reason = "google.golang.org/grpc: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-j5w8-q4qc-rx2x"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-jppx-rxg9-jmrx"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-m425-mq94-257g"
+reason = "google.golang.org/grpc: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-mw99-9chc-xw7r"
+reason = "gopkg.in/src-d/go-git.v4: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-p77j-4mvh-x3m3"
+reason = "google.golang.org/grpc: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-p782-xgp4-8hr8"
+reason = "golang.org/x/sys: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-ppp9-7jff-5vj2"
+reason = "golang.org/x/text: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-q4h4-gmj2-qvw2"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-qc2q-p7wx-3px3"
+reason = "google.golang.org/grpc: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-qppj-fm5r-hxr3"
+reason = "golang.org/x/net: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-qpw4-5x99-6vjp"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-qxp5-gwg8-xv66"
+reason = "golang.org/x/net: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-r9px-m959-cxf4"
+reason = "gopkg.in/src-d/go-git.v4: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-rm3j-f69w-wqmq"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-v725-9546-7q7m"
+reason = "gopkg.in/src-d/go-git.v4: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-v778-237x-gjrc"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-vgwf-h737-ff37"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-vp52-pcj8-j9qc"
+reason = "google.golang.org/grpc: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-vvgc-356p-c3xw"
+reason = "golang.org/x/net: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-vvpx-j8f3-3w6h"
+reason = "golang.org/x/net: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-w67g-5rqw-f597"
+reason = "github.com/gorilla/websocket: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-w73w-5m7g-f7qc"
+reason = "github.com/dgrijalva/jwt-go: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-w879-237q-wc7r"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-x527-x647-q7gg"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GHSA-xrjj-mj9h-534m"
+reason = "golang.org/x/net: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2020-0015"
+reason = "golang.org/x/text: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2020-0017"
+reason = "github.com/dgrijalva/jwt-go: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2020-0019"
+reason = "github.com/gorilla/websocket: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2021-0053"
+reason = "github.com/gogo/protobuf: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2021-0113"
+reason = "golang.org/x/text: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2021-0227"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2021-0234"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2021-0238"
+reason = "golang.org/x/net: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2021-0239"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2021-0240"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2021-0241"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2021-0242"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2021-0243"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2021-0245"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2021-0263"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2021-0264"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2021-0317"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2021-0319"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2021-0347"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2021-0356"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2022-0236"
+reason = "golang.org/x/net, stdlib: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2022-0273"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2022-0288"
+reason = "golang.org/x/net, stdlib: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2022-0289"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2022-0322"
+reason = "github.com/prometheus/client_golang: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2022-0433"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2022-0435"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2022-0477"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2022-0493"
+reason = "golang.org/x/sys, stdlib: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2022-0515"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2022-0520"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2022-0521"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2022-0522"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2022-0523"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2022-0524"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2022-0525"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2022-0526"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2022-0527"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2022-0531"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2022-0532"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2022-0533"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2022-0537"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2022-0603"
+reason = "gopkg.in/yaml.v3: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2022-0968"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2022-0969"
+reason = "golang.org/x/net, stdlib: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2022-1037"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2022-1038"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2022-1039"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2022-1059"
+reason = "golang.org/x/text: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2022-1095"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2022-1143"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2022-1144"
+reason = "golang.org/x/net, stdlib: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2023-1568"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2023-1569"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2023-1570"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2023-1571"
+reason = "golang.org/x/net, stdlib: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2023-1621"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2023-1702"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2023-1703"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2023-1704"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2023-1705"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2023-1751"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2023-1752"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2023-1753"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2023-1840"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2023-1878"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2023-1987"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2023-1988"
+reason = "golang.org/x/net: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2023-2041"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2023-2043"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2023-2102"
+reason = "golang.org/x/net, stdlib: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2023-2153"
+reason = "google.golang.org/grpc: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2023-2185"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2023-2186"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2023-2375"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2023-2382"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2023-2402"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2024-2456"
+reason = "gopkg.in/src-d/go-git.v4: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2024-2466"
+reason = "gopkg.in/src-d/go-git.v4: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2024-2598"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2024-2599"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2024-2600"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2024-2609"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2024-2610"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2024-2611"
+reason = "google.golang.org/protobuf: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2024-2687"
+reason = "golang.org/x/net, stdlib: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2024-2887"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2024-2888"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2024-2961"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2024-2963"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2024-3105"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2024-3106"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2024-3107"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2024-3321"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2024-3333"
+reason = "golang.org/x/net: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2025-3367"
+reason = "gopkg.in/src-d/go-git.v4: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2025-3368"
+reason = "gopkg.in/src-d/go-git.v4: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2025-3372"
+reason = "github.com/golang/glog: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2025-3373"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2025-3420"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2025-3447"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2025-3487"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2025-3488"
+reason = "golang.org/x/oauth2: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2025-3503"
+reason = "golang.org/x/net, stdlib: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2025-3563"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2025-3595"
+reason = "golang.org/x/net: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2025-3750"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2025-3751"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2025-3849"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2025-3956"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2025-4006"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2025-4007"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2025-4008"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2025-4009"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2025-4010"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2025-4011"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2025-4012"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2025-4013"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2025-4014"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2025-4015"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2025-4116"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2025-4134"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2025-4135"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2025-4155"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2025-4175"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2025-4188"
+reason = "github.com/sirupsen/logrus: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-4337"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-4340"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-4341"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-4342"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-4403"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-4440"
+reason = "golang.org/x/net: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-4441"
+reason = "golang.org/x/net: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-4601"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-4602"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-4603"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-4762"
+reason = "google.golang.org/grpc: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-4864"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-4865"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-4869"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-4870"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-4918"
+reason = "golang.org/x/net, stdlib: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-4946"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-4947"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-4970"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-4971"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-4976"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-4977"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-4980"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-4981"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-4982"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-4986"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-5005"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-5006"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-5013"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-5014"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-5015"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-5016"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-5017"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-5018"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-5019"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-5020"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-5021"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-5024"
+reason = "golang.org/x/sys: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-5025"
+reason = "golang.org/x/net: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-5026"
+reason = "golang.org/x/net, stdlib: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-5027"
+reason = "golang.org/x/net: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-5028"
+reason = "golang.org/x/net: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-5029"
+reason = "golang.org/x/net: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-5030"
+reason = "golang.org/x/net: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-5033"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-5037"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-5038"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-5039"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-5320"
+reason = "github.com/yuin/goldmark: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-5856"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-5942"
+reason = "golang.org/x/net: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-5970"
+reason = "golang.org/x/text: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-5972"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-6061"
+reason = "google.golang.org/grpc: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-6088"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-6089"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-6090"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-6091"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-6179"
+reason = "golang.org/x/mod: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-6180"
+reason = "golang.org/x/mod: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-6218"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-6278"
+reason = "github.com/gorilla/websocket: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-6303"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-6348"
+reason = "google.golang.org/grpc: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-6354"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-6355"
+reason = "golang.org/x/crypto: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-6441"
+reason = "google.golang.org/grpc: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-6443"
+reason = "google.golang.org/grpc: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-6599"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-6600"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-6603"
+reason = "golang.org/x/net, stdlib: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-6604"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-6605"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-6607"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-6608"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-6609"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-6610"
+reason = "golang.org/x/net, stdlib: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-6611"
+reason = "golang.org/x/net, stdlib: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-6612"
+reason = "golang.org/x/net, stdlib: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-6613"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."
+
+[[IgnoredVulns]]
+id = "GO-2026-6617"
+reason = "golang.org/x/net, stdlib: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-6629"
+reason = "golang.org/x/text: old transitive dependency of the pinned Pulumi SDK in go.sum. This test stack is only used by CI to exercise the action, is not shipped with it, and only creates a random string without handling untrusted input."
+
+[[IgnoredVulns]]
+id = "GO-2026-6809"
+reason = "Go standard library issue reported against the go 1.14 directive in go.mod. This test stack is a short-lived Pulumi program built by CI with the setup-go toolchain (not shipped with the action), and it only creates a random string."

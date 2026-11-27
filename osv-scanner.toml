@@ -9,3 +9,123 @@ reason = "glob is only pulled in transitively by dev tooling (jest, rimraf, test
 [[IgnoredVulns]]
 id = "GHSA-g3hv-75wg-m249"
 reason = "minimatch is only pulled in transitively by dev tooling (eslint, jest) and npm internals of @pulumi/pulumi; the action never passes attacker-controlled glob patterns to it"
+
+[[IgnoredVulns]]
+id = "GHSA-8988-4f7v-96qf"
+reason = "@opentelemetry/core and propagator-jaeger are only pulled in by the tracing code of @pulumi/pulumi; the action only uses @pulumi/pulumi/automation, which shells out to the Pulumi CLI, and never initialises OpenTelemetry propagation"
+
+[[IgnoredVulns]]
+id = "GHSA-45rx-2jwx-cxfr"
+reason = "@opentelemetry/core and propagator-jaeger are only pulled in by the tracing code of @pulumi/pulumi; the action only uses @pulumi/pulumi/automation, which shells out to the Pulumi CLI, and never initialises OpenTelemetry propagation"
+
+[[IgnoredVulns]]
+id = "GHSA-jfc7-64v2-mr8c"
+reason = "sigstore and @sigstore/core are only pulled in by pacote (npm internals of @pulumi/pulumi); the action never verifies sigstore bundles"
+
+[[IgnoredVulns]]
+id = "GHSA-52v5-jr5w-gjxr"
+reason = "sigstore and @sigstore/core are only pulled in by pacote (npm internals of @pulumi/pulumi); the action never verifies sigstore bundles"
+
+[[IgnoredVulns]]
+id = "GHSA-vpq2-c234-7xj6"
+reason = "@tootallnate/once is only pulled in by http-proxy-agent@4 through dev tooling; the action never passes an AbortSignal to it"
+
+[[IgnoredVulns]]
+id = "GHSA-grv7-fg5c-xmjg"
+reason = "braces/micromatch 3.x are only pulled in by anymatch and jest (test dependencies); the action never expands attacker-controlled glob patterns"
+
+[[IgnoredVulns]]
+id = "GHSA-952p-6rrq-rcjv"
+reason = "braces/micromatch 3.x are only pulled in by anymatch and jest (test dependencies); the action never expands attacker-controlled glob patterns"
+
+[[IgnoredVulns]]
+id = "GHSA-qr28-fpjm-wq7f"
+reason = "decode-uri-component is only pulled in by source-map-resolve through jest (test dependency) and is not used by the action code"
+
+[[IgnoredVulns]]
+id = "GHSA-vcc3-ghjq-m6fr"
+reason = "decode-uri-component is only pulled in by source-map-resolve through jest (test dependency) and is not used by the action code"
+
+[[IgnoredVulns]]
+id = "GHSA-5w9c-rv96-fr7g"
+reason = "faker is only referenced by @types/faker (type definitions, dev dependency) and is not bundled into the action"
+
+[[IgnoredVulns]]
+id = "GHSA-h3mg-xc3c-68pw"
+reason = "ip-address is only pulled in by socks via npm internals (pacote/node-gyp) of @pulumi/pulumi; the action never parses or compares IP addresses"
+
+[[IgnoredVulns]]
+id = "GHSA-j6r3-76f7-8jcv"
+reason = "ip-address is only pulled in by socks via npm internals (pacote/node-gyp) of @pulumi/pulumi; the action never parses or compares IP addresses"
+
+[[IgnoredVulns]]
+id = "GHSA-mwp4-54f8-5fhr"
+reason = "ip-address is only pulled in by socks via npm internals (pacote/node-gyp) of @pulumi/pulumi; the action never parses or compares IP addresses"
+
+[[IgnoredVulns]]
+id = "GHSA-rpw4-54j3-4h4q"
+reason = "ip-address is only pulled in by socks via npm internals (pacote/node-gyp) of @pulumi/pulumi; the action never parses or compares IP addresses"
+
+[[IgnoredVulns]]
+id = "GHSA-rxp7-6hxx-x8q5"
+reason = "ip-address is only pulled in by socks via npm internals (pacote/node-gyp) of @pulumi/pulumi; the action never parses or compares IP addresses"
+
+[[IgnoredVulns]]
+id = "GHSA-v2v4-37r5-5v8g"
+reason = "ip-address is only pulled in by socks via npm internals (pacote/node-gyp) of @pulumi/pulumi; the action never parses or compares IP addresses"
+
+[[IgnoredVulns]]
+id = "GHSA-w4pp-8pjf-rmxw"
+reason = "pacote is only pulled in by @npmcli/arborist (npm internals of @pulumi/pulumi); the action never fetches git packages with it"
+
+[[IgnoredVulns]]
+id = "GHSA-23hp-3jrh-7fpw"
+reason = "tar 6.x is only pulled in by cacache and node-gyp (npm internals of @pulumi/pulumi and dev tooling); the action never extracts tar archives with it (tool downloads use @actions/tool-cache)"
+
+[[IgnoredVulns]]
+id = "GHSA-34x7-hfp2-rc4v"
+reason = "tar 6.x is only pulled in by cacache and node-gyp (npm internals of @pulumi/pulumi and dev tooling); the action never extracts tar archives with it (tool downloads use @actions/tool-cache)"
+
+[[IgnoredVulns]]
+id = "GHSA-83g3-92jg-28cx"
+reason = "tar 6.x is only pulled in by cacache and node-gyp (npm internals of @pulumi/pulumi and dev tooling); the action never extracts tar archives with it (tool downloads use @actions/tool-cache)"
+
+[[IgnoredVulns]]
+id = "GHSA-8qq5-rm4j-mr97"
+reason = "tar 6.x is only pulled in by cacache and node-gyp (npm internals of @pulumi/pulumi and dev tooling); the action never extracts tar archives with it (tool downloads use @actions/tool-cache)"
+
+[[IgnoredVulns]]
+id = "GHSA-8x88-c5mf-7j5w"
+reason = "tar 6.x is only pulled in by cacache and node-gyp (npm internals of @pulumi/pulumi and dev tooling); the action never extracts tar archives with it (tool downloads use @actions/tool-cache)"
+
+[[IgnoredVulns]]
+id = "GHSA-9ppj-qmqm-q256"
+reason = "tar 6.x is only pulled in by cacache and node-gyp (npm internals of @pulumi/pulumi and dev tooling); the action never extracts tar archives with it (tool downloads use @actions/tool-cache)"
+
+[[IgnoredVulns]]
+id = "GHSA-gvwx-54wh-qm9j"
+reason = "tar 6.x is only pulled in by cacache and node-gyp (npm internals of @pulumi/pulumi and dev tooling); the action never extracts tar archives with it (tool downloads use @actions/tool-cache)"
+
+[[IgnoredVulns]]
+id = "GHSA-qffp-2rhf-9h96"
+reason = "tar 6.x is only pulled in by cacache and node-gyp (npm internals of @pulumi/pulumi and dev tooling); the action never extracts tar archives with it (tool downloads use @actions/tool-cache)"
+
+[[IgnoredVulns]]
+id = "GHSA-r292-9mhp-454m"
+reason = "tar 6.x is only pulled in by cacache and node-gyp (npm internals of @pulumi/pulumi and dev tooling); the action never extracts tar archives with it (tool downloads use @actions/tool-cache)"
+
+[[IgnoredVulns]]
+id = "GHSA-r6q2-hw4h-h46w"
+reason = "tar 6.x is only pulled in by cacache and node-gyp (npm internals of @pulumi/pulumi and dev tooling); the action never extracts tar archives with it (tool downloads use @actions/tool-cache)"
+
+[[IgnoredVulns]]
+id = "GHSA-vmf3-w455-68vh"
+reason = "tar 6.x is only pulled in by cacache and node-gyp (npm internals of @pulumi/pulumi and dev tooling); the action never extracts tar archives with it (tool downloads use @actions/tool-cache)"
+
+[[IgnoredVulns]]
+id = "GHSA-w8wr-v893-vjvp"
+reason = "tar 6.x is only pulled in by cacache and node-gyp (npm internals of @pulumi/pulumi and dev tooling); the action never extracts tar archives with it (tool downloads use @actions/tool-cache)"
+
+[[IgnoredVulns]]
+id = "GHSA-w5hq-g745-h8pq"
+reason = "uuid only affects v3/v5/v6 when a buf argument is given; @actions/core and @actions/tool-cache only call v4() without a buffer"
