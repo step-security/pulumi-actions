@@ -21,14 +21,14 @@ jobs:
         run: yarn install
 
       - name: Authenticate with Google 🔑
-        uses: google-github-actions/setup-gcloud@v0
+        uses: step-security/setup-gcloud@v3
         with:
           service_account_key: ${{ secrets.GCP_KEY }}
           project_id: ${{ env.PROJECT_ID }}
           export_default_credentials: true
 
       - name: Applying infrastructure 🚀
-        uses: step-security/pulumi-actions@v7
+        uses: step-security/pulumi-actions@v5
         with:
           command: up
           stack-name: dev

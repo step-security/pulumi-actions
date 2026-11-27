@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: step-security/pulumi-actions@v7
+      - uses: step-security/pulumi-actions@v5
         with:
           command: preview
           stack-name: org-name/stack-name
@@ -62,8 +62,8 @@ The action can be configured with the following arguments:
 - `github-token` - (optional) A GitHub token that has access levels to allow the
   Action to comment on a PR. Defaults to `${{ github.token }}`
 
-- `refresh` - (optional) If `true`, `preview` and `up` commands are called with
-  the `--refresh` flag.
+- `refresh` - (optional) If `true`, stack is refreshed before running the
+  `command`.
 
 - `secrets-provider` - (optional) The type of the provider that should be used
   to encrypt and decrypt secrets. Possible choices: `default`, `passphrase`,
@@ -72,14 +72,6 @@ The action can be configured with the following arguments:
 
 - `color` - (optional) Colorize output. Choices are: always, never, raw, auto
   (default "auto").
-
-- `log-verbosity` - (optional) Enable verbose logging (1-11; >3 is very
-  verbose).
-
-- `log-flow` - (optional) Flow log settings to child processes (like plugins).
-
-- `debug` - (optional) Print detailed debugging output during resource
-  operations.
 
 ### Extra options
 
@@ -117,9 +109,7 @@ The action can be configured with the following arguments:
 - `pulumi-version` - (optional) Install a specific version of the Pulumi CLI.
   Defaults to "^3". Specifying a version range will ensure a version within that
   range is installed. Use "latest" to fetch the latest published release or
-  "dev" to download the latest development pre-release. You can also use
-  `pr#<number>` to download artifacts from a specific pull request in
-  pulumi/pulumi.
+  "dev" to download the latest development pre-release.
 
 - `pulumi-version-file` - (optional) File containing the version of the Pulumi
   CLI to install. Example: .pulumi.version. Only one `pulumi-version` or
@@ -166,13 +156,6 @@ The action can be configured with the following arguments:
   long pr comments from the front instead of the back. This ensures that the
   resources summary is always included in the comment.
 
-- `continue-on-error` - (optional) If `true`, then the action will continue
-  running even if an error occurs.
-
-- `run-program` - (optional) Run the Pulumi program before refreshing or
-  destroying resources. Only valid for refresh, destroy, preview (with
-  `refresh`), and up/update (with `refresh`) commands.
-
 By default, this action will try to authenticate Pulumi with
 [Pulumi Cloud](https://app.pulumi.com/). If you have not specified a
 `PULUMI_ACCESS_TOKEN` then you will need to specify an alternative backend via
@@ -184,7 +167,7 @@ If you want to only install the Pulumi CLI, omit the `command` field of the
 action.
 
 ```yaml
-- uses: step-security/pulumi-actions@v7
+- uses: step-security/pulumi-actions@v5
 ```
 
 This will install Pulumi and exit without performing any other operations.
@@ -218,7 +201,7 @@ We can see that `pet-name` is an output. To get the value of this output in the
 action, we would use code similar to the following:
 
 ```yaml
-- uses: step-security/pulumi-actions@v7
+- uses: step-security/pulumi-actions@v5
   id: pulumi
   env:
     PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
@@ -259,18 +242,3 @@ the correct GitHub Marketplace actions that support it.
 - [NodeJS Runtime + Google GCS Self Managed Backend](examples/nodejs-google.yaml)
 - [NodeJS Runtime + Azure Blob Self Managed Backend](examples/nodejs-azure.yaml)
 - [NodeJS Runtime + Local File System Self Managed Backend](examples/nodejs-local.yaml)
-
-```yaml
-- uses: actions/setup-node@v7
-with:
-  node-version: 14.x
-```
-
-- The action will no longer run
-  `npm ci | npm install | pip3 install | pipenv install`. Please ensure that you
-  are installing your dependencies before Pulumi commands are executed, e.g.:
-
-```
-- run: pip install -r requirements
-  working-directory: infra
-```

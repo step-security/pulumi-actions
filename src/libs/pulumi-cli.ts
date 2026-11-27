@@ -1,11 +1,9 @@
-import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as core from '@actions/core';
 import * as io from '@actions/io';
 import * as tc from '@actions/tool-cache';
 import * as semver from 'semver';
-import { verifyChecksum } from './checksum';
 import * as exec from './exec';
 import { getVersionObject } from './libs/get-version';
 
@@ -50,7 +48,6 @@ export function getPlatform(): string | undefined {
     'darwin-x64': 'darwin-x64',
     'darwin-arm64': 'darwin-arm64',
     'win32-x64': 'windows-x64',
-    'win32-arm64': 'windows-arm64',
   };
 
   const runnerPlatform = os.platform();
@@ -59,17 +56,13 @@ export function getPlatform(): string | undefined {
   return platforms[`${runnerPlatform}-${runnerArch}`];
 }
 
-function isDynamicVersion(range: string): boolean {
-  return range === 'dev' || range.toLowerCase().startsWith('pr#');
-}
-
 export async function downloadCli(range: string): Promise<void> {
   const platform = getPlatform();
   core.debug(`Platform: ${platform}`);
 
   if (!platform) {
     throw new Error(
-      'Unsupported operating system - Pulumi CLI is only released for Darwin (x64, arm64), Linux (x64, arm64) and Windows (x64, arm64)',
+      'Unsupported operating system - Pulumi CLI is only released for Darwin (x64, arm64), Linux (x64, arm64) and Windows (x64)',
     );
   }
 
@@ -77,7 +70,7 @@ export async function downloadCli(range: string): Promise<void> {
 
   const isPulumiInstalled = await io.which('pulumi');
 
-  if (isPulumiInstalled && range != 'latest' && !isDynamicVersion(range)) {
+  if (isPulumiInstalled && range != 'latest') {
     // Check for version of Pulumi CLI installed on the runner
     const runnerVersion = await getVersion();
 
@@ -104,7 +97,7 @@ export async function downloadCli(range: string): Promise<void> {
     }
   }
 
-  const { version, downloads, checksums } = await getVersionObject(range);
+  const { version, downloads } = await getVersionObject(range);
   if (isPulumiInstalled && range === 'latest') {
     const runnerVersion = await getVersion();
     if (runnerVersion && runnerVersion === version) {
@@ -119,7 +112,7 @@ export async function downloadCli(range: string): Promise<void> {
   core.info(`Matched version: ${version}`);
 
   let isUnsupportedVersion;
-  if (isDynamicVersion(range)) {
+  if (range == 'dev') {
     isUnsupportedVersion = false;
   } else {
     isUnsupportedVersion = semver.lt(version, '3.0.0');
@@ -143,109 +136,61 @@ export async function downloadCli(range: string): Promise<void> {
       );
     });
 
-  // For PR builds, we need to authenticate the download
-  const isPrBuild = range.toLowerCase().startsWith('pr#');
-  const auth = isPrBuild && process.env.GITHUB_TOKEN ? `Bearer ${process.env.GITHUB_TOKEN}` : undefined;
-
-  if (isPrBuild) {
-    core.warning(
-      `Installing an unreleased CLI built from ${range}. PR builds are not published with checksums and may come from an unreviewed pull request, so only use them for testing.`,
-    );
-  }
-
-  const downloaded = await tc.downloadTool(downloads[platform], undefined, auth);
+  const downloaded = await tc.downloadTool(downloads[platform]);
   core.debug(`successfully downloaded ${downloads[platform]} to ${downloaded}`);
-
-  await verifyChecksum(downloaded, downloads[platform], checksums, platform);
 
   await io.mkdirP(destination);
   core.debug(`Successfully created ${destination}`);
 
-  // PR builds are zip files containing tarballs, extract to get the tarball
-  let fileToExtract = downloaded;
-  let zipExtractDir: string | undefined;
-  if (isPrBuild) {
-    zipExtractDir = path.join(destination, 'zip-extract');
-    await io.mkdirP(zipExtractDir);
-    await tc.extractZip(downloaded, zipExtractDir);
-    core.debug(`Extracted PR artifact zip to ${zipExtractDir}`);
-
-    const files = fs.readdirSync(zipExtractDir).filter(f => f.startsWith('pulumi-') && f.endsWith('.tar.gz'));
-    if (files.length === 0) {
-      throw new Error(`Could not find tarball in PR artifact zip at ${zipExtractDir}`);
+  switch (platform) {
+    case 'windows-x64': {
+      const extractedPath = await tc.extractZip(downloaded, destination);
+      core.debug(`Successfully extracted ${downloaded} to ${extractedPath}`);
+      const oldPath = path.join(destination, 'pulumi', 'bin');
+      const newPath = path.join(destination, 'bin');
+      await io.mv(oldPath, newPath);
+      core.debug(`Successfully renamed ${oldPath} to ${newPath}`);
+      await io
+        .rmRF(path.join(destination, 'pulumi'))
+        .catch()
+        .then(() => {
+          core.info(
+            `Successfully deleted left-over ${path.join(
+              destination,
+              'pulumi',
+            )}`,
+          );
+        });
+      break;
     }
-    fileToExtract = path.join(zipExtractDir, files[0]);
-    core.debug(`Found tarball in PR artifact: ${fileToExtract}`);
-  }
-
-  // Extract the pulumi CLI to destination
-  let extractedPath: string;
-  if (isPrBuild || platform === 'linux-x64' || platform === 'linux-arm64' || platform === 'darwin-x64' || platform === 'darwin-arm64') {
-    extractedPath = await tc.extractTar(fileToExtract, destination);
-  } else {
-    extractedPath = await tc.extractZip(fileToExtract, destination);
-  }
-  core.debug(`Successfully extracted to ${extractedPath}`);
-
-  // Windows zip files have a different structure: pulumi/bin instead of pulumi
-  const isWindowsPlatform = platform.startsWith('windows');
-  const oldPath = isWindowsPlatform
-    ? path.join(destination, 'pulumi', 'bin')
-    : path.join(destination, 'pulumi');
-  const newPath = path.join(destination, 'bin');
-  await io.mv(oldPath, newPath);
-  core.debug(`Successfully renamed ${oldPath} to ${newPath}`);
-
-  await io
-    .rmRF(path.join(destination, 'pulumi'))
-    .catch()
-    .then(() => {
-      core.info(
-        `Successfully deleted left-over ${path.join(destination, 'pulumi')}`,
-      );
-    });
-
-  if (zipExtractDir) {
-    await io.rmRF(zipExtractDir);
-  }
-
-  // For dynamic versions (dev/PR), we need to get the version from the binary we just installed
-  // For other builds, we know the version already
-  let cacheVersion = version;
-  if (isDynamicVersion(range)) {
-    // Run the binary directly from the installation directory to get its version
-    const pulumiExecutable = platform.startsWith('windows') ? 'pulumi.exe' : 'pulumi';
-    const pulumiPath = path.join(destination, 'bin', pulumiExecutable);
-    const versionExec = await exec.exec(pulumiPath, ['version'], true);
-    if (!versionExec.success) {
-      throw new Error(`Failed to get version from installed pulumi binary:\n${versionExec.stderr}`);
+    default: {
+      const extractedPath = await tc.extractTar(downloaded, destination);
+      core.debug(`Successfully extracted ${downloaded} to ${extractedPath}`);
+      const oldPath = path.join(destination, 'pulumi');
+      const newPath = path.join(destination, 'bin');
+      await io.mv(oldPath, newPath);
+      core.debug(`Successfully renamed ${oldPath} to ${newPath}`);
+      break;
     }
-    cacheVersion = versionExec.stdout.trim();
   }
 
   const cachedPath = await tc.cacheDir(
     path.join(destination, 'bin'),
     'pulumi',
-    cacheVersion,
+    version,
   );
   core.addPath(cachedPath);
 
-  // Verify the installed version
-  // On Windows, we need to use the full path to the executable since core.addPath()
-  // might not take effect immediately for the current process
-  const pulumiExecutable = platform.startsWith('windows') ? 'pulumi.exe' : 'pulumi';
-  const pulumiFullPath = path.join(cachedPath, pulumiExecutable);
-  const versionExec = await exec.exec(pulumiFullPath, ['version'], true);
-  const installedVersion = versionExec.stdout.trim();
-  core.debug(`Running pulumi version returned: ${installedVersion}`);
+  // Check that running pulumi now returns a version we expect
+  const versionExec = await exec.exec(`pulumi`, ['version'], true);
+  const pulumiVersion = versionExec.stdout.trim();
+  core.debug(`Running pulumi verison returned: ${pulumiVersion}`);
 
   if (!versionExec.success) {
     throw new Error(`Failed to verify pulumi version:\n${versionExec.stderr}`);
   }
 
-  if (isDynamicVersion(range)) {
-    core.info(`Installed ${range} build with version: ${installedVersion}`);
-  } else if (!semver.satisfies(installedVersion, version)) {
-    throw new Error(`Installed version "${installedVersion}" did not satisfy the resolved version "${version}"`);
+  if (!semver.satisfies(pulumiVersion, version)) {
+    throw new Error(`Installed version "${pulumiVersion}" did not satisfy the resolved version "${version}"`);
   }
 }
