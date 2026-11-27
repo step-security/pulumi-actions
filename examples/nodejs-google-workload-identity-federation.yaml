@@ -24,13 +24,13 @@ jobs:
         run: yarn install
 
       - name: Authenticate with Google 🔑
-        uses: google-github-actions/auth@v0
+        uses: step-security/google-github-auth@v3
         with:
           workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.SERVICE_ACCOUNT_EMAIL }}
 
       - name: Applying infrastructure 🚀
-        uses: pulumi/actions@v3
+        uses: step-security/pulumi-actions@v5
         with:
           command: up
           stack-name: dev

@@ -1,6 +1,5 @@
 import * as fs from 'fs';
 import { ConfigMap } from '@pulumi/pulumi/automation';
-import * as rt from 'runtypes';
 import {
   getBooleanInput,
   getInput,
@@ -8,14 +7,15 @@ import {
   getNumberInput,
   getUnionInput,
   getYAMLInput,
-} from './libs/inputs';
+} from 'actions-parsers';
+import * as rt from 'runtypes';
 import { parseSemicolorToArray } from './libs/utils';
 
 // installationConfig is the expected Action inputs when
 // the user intends to download the Pulumi CLI without
 // running any other Pulumi operations.
 // We expect command NOT to be provided.
-export const installationConfig = rt.Object({
+export const installationConfig = rt.Record({
   command: rt.Undefined,
   pulumiVersion: rt.String,
 });
@@ -39,12 +39,13 @@ export function makeInstallationConfig(): rt.Result<InstallationConfig> {
       throw new Error(`pulumi-version-file '${versionFile}' does not exist`);
     }
   }
-  return installationConfig.inspect({
+  return installationConfig.validate({
     command: getInput('command') || undefined,
     pulumiVersion: pulumiVersion ?? '^3',
   });
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function makeConfig() {
   let pulumiVersion = getInput('pulumi-version');
   const versionFile = getInput('pulumi-version-file');
@@ -85,6 +86,7 @@ export function makeConfig() {
     commentOnSummary: getBooleanInput('comment-on-summary'),
     upsert: getBooleanInput('upsert'),
     remove: getBooleanInput('remove'),
+    refresh: getBooleanInput('refresh'),
     // TODO: Add parser back once pulumi/pulumi#12641 is fixed.
     // @see https://github.com/pulumi/actions/pull/913
     // @see https://github.com/pulumi/actions/pull/912
@@ -97,17 +99,14 @@ export function makeConfig() {
       message: getInput('message'),
       expectNoChanges: getBooleanInput('expect-no-changes'),
       diff: getBooleanInput('diff'),
-      refresh: getBooleanInput('refresh'),
       replace: parseSemicolorToArray(getMultilineInput('replace')),
-      exclude: parseSemicolorToArray(getMultilineInput('exclude')),
-      excludeDependents: getBooleanInput('exclude-dependents'),
       target: parseSemicolorToArray(getMultilineInput('target')),
       targetDependents: getBooleanInput('target-dependents'),
       policyPacks: parseSemicolorToArray(getMultilineInput('policyPacks')),
       policyPackConfigs: parseSemicolorToArray(
         getMultilineInput('policyPackConfigs'),
       ),
-      userAgent: 'step-security/pulumi-actions@v7',
+      userAgent: 'pulumi/actions@v5',
       color: getUnionInput('color', {
         alternatives: ['always', 'never', 'raw', 'auto'] as const,
       }),
@@ -115,14 +114,6 @@ export function makeConfig() {
       plan: getInput('plan'),
       suppressOutputs: getBooleanInput('suppress-outputs'),
       suppressProgress: getBooleanInput('suppress-progress'),
-      continueOnError: getBooleanInput('continue-on-error'),
-      logVerbosity: getNumberInput('log-verbosity'),
-      logFlow: getBooleanInput('log-flow'),
-      logToStdErr: !!getInput('log-verbosity'),  // logToStdErr is true if logVerbosity has a truthy value
-      debug: getBooleanInput('debug'),
-      runProgram: getInput('run-program')
-        ? getBooleanInput('run-program')
-        : undefined,
     },
   };
 }
